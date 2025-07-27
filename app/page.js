@@ -79,8 +79,7 @@ export default function HomePage() {
                 in Minutes
               </h1>
               <p className="text-lg text-gray-600 mb-8">
-                Find and reserve the best sports turfs in your city. Football,
-                cricket, hockey - we have it all with easy online booking.
+           Reserve your spot at our premium turf for football and cricket — fast and hassle-free online booking!
               </p>
               <Link href="/book">
                 <button className="bg-gradient-to-r from-green-500 to-cyan-500 hover:from-green-600 hover:to-cyan-600 text-white px-8 py-4 rounded-full text-lg font-bold shadow-lg transition duration-300 transform hover:scale-105">
