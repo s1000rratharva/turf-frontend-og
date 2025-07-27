@@ -50,104 +50,66 @@ const PaymentComponent = () => {
     return isNaN(hour) ? "--:--" : `${String(hour + 1).padStart(2, "0")}:00`;
   };
 
-  const handlePayment = async () => {
-    const resScript = await loadRazorpayScript();
-    if (!resScript) {
-      toast.error("Razorpay SDK failed to load.");
-      return;
-    }
+const handlePayment = async () => {
+  if (!user) {
+    toast.error("Please login to book a slot.");
+    return;
+  }
 
-    try {
-      toast.loading("Creating Razorpay Order...");
+  try {
+    const res = await axios.post("/api/razorpay", {
+      amount: totalAmount,
+    });
 
-      const res = await fetch(
-        process.env.NEXT_PUBLIC_API_URL + "/create-order",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ amount: totalAmount }),
-        }
-      );
+    const data = res.data;
 
-      const data = await res.json();
-      toast.dismiss();
-
-      if (!data.id) throw new Error("Razorpay order creation failed");
-
-      const rzp = new window.Razorpay({
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_hD5vT64kNs5EFN",
-        amount: totalAmount * 100,
-        currency: "INR",
-        name: "SuperKick Turf",
-        description: `Booking for ${activity}`,
-        order_id: data.id,
-        handler: async (response) => {
-          try {
-            const user = auth.currentUser;
-            if (!user) throw new Error("User not logged in");
-
-            const paymentId = response.razorpay_payment_id;
-            const orderId = response.razorpay_order_id;
-
-            const activityCollection =
-              activity.toLowerCase() === "football"
-                ? "Football_Bookings"
-                : "Cricket_Bookings";
-
-            for (const slot of slots) {
-              const [hour] = slot.split(":").map(Number);
-              const endTime = `${String(hour + 1).padStart(2, "0")}:00`;
-
-              await addDoc(collection(db, activityCollection), {
-                userId: user.uid,
-                userEmail: user.email,
-                date,
-                startTime: slot,
-                endTime,
-                paymentId,
-                orderId,
-                amountPaid: pricePerHour,
-                timestamp: serverTimestamp(),
-              });
-            }
-
-            await fetch("/api/send-confirmation", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                to: user.email,
-                activity,
-                date,
-                startTime: slots[0],
-                endTime: getEndTime(slots[slots.length - 1]),
-              }),
-            });
-
-            toast.success("Booking Successful!");
-            router.push("/your-booking");
-          } catch (err) {
-            console.error("Booking save failed:", err);
-            toast.error("Payment done, but failed to save booking.");
-          }
+    const rzp = new window.Razorpay({
+      key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_hD5vT64kNs5EFN",
+      amount: totalAmount * 100,
+      currency: "INR",
+      name: "SuperKick Turf",
+      description: `Booking for ${activity}`,
+      order_id: data.id,
+      handler: async (response) => {
+        await saveBookingToFirestore(response);
+        toast.success("Booking confirmed!");
+        router.push("/your-bookings");
+      },
+      prefill: {
+        email: auth.currentUser?.email || "",
+      },
+      theme: { color: "#22c55e" },
+      config: {
+        display: {
+          blocks: {
+            upi: {
+              name: "Pay via UPI",
+              instruments: [
+                { method: "upi" }
+              ],
+            },
+            netbanking: {
+              name: "Pay via Netbanking",
+              instruments: [
+                { method: "netbanking" }
+              ],
+            },
+          },
+          sequence: ["block.upi", "block.netbanking"],
+          preferences: {
+            show_default_blocks: false,
+          },
         },
-        prefill: {
-          email: auth.currentUser?.email || "",
-        },
-        theme: { color: "#22c55e" },
-        method: {
-          netbanking: true,
-          upi: true,
-          card: false,
-        },
-      });
+      },
+    });
 
-      rzp.open();
-    } catch (err) {
-      console.error("Payment Error:", err);
-      toast.dismiss();
-      toast.error("Something went wrong during payment.");
-    }
-  };
+    rzp.open();
+  } catch (err) {
+    console.error(err);
+    toast.error("Payment failed. Please try again.");
+  }
+};
+
 
   if (!activity || !date || !slots.length) {
     return (
