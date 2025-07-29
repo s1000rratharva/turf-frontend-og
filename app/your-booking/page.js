@@ -2,14 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { collection, getDocs, query, where } from "firebase/firestore";
-import { auth, db } from "../firebase"; // ✅ make sure db = getFirestore(app)
+import { auth, db } from "../firebase"; // ✅ db = getFirestore(app)
 import { onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
 const YourBookingsPage = () => {
   const [bookings, setBookings] = useState([]);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -45,8 +44,8 @@ const YourBookingsPage = () => {
         }));
 
         const allBookings = [...cricketBookings, ...footballBookings].sort((a, b) => {
-          const dateA = new Date(`${a.date}T${a.startTime}`);
-          const dateB = new Date(`${b.date}T${b.startTime}`);
+          const dateA = new Date(`${a.date}T${a.slots?.[0] || "00:00"}`);
+          const dateB = new Date(`${b.date}T${b.slots?.[0] || "00:00"}`);
           return dateA - dateB;
         });
 
@@ -73,8 +72,9 @@ const YourBookingsPage = () => {
 
       <div className="space-y-4">
         {bookings.map((booking) => {
-          const isPast =
-            new Date(`${booking.date}T${booking.endTime}`) < new Date();
+          const startTime = booking.slots?.[0] || "00:00";
+          const endTime = booking.slots?.at(-1) || "00:00";
+          const isPast = new Date(`${booking.date}T${endTime}`) < new Date();
 
           return (
             <div
@@ -90,9 +90,9 @@ const YourBookingsPage = () => {
                   <p className="font-semibold text-lg">{booking.activity}</p>
                   <p>Date: {booking.date}</p>
                   <p>
-                    Slot: {booking.startTime} - {booking.endTime}
+                    Slot: {startTime} - {endTime}
                   </p>
-                  <p>Payment ID: {booking.paymentId}</p>
+                  <p>Payment ID: {booking.razorpayPaymentId}</p>
                 </div>
                 <span className="text-sm font-medium uppercase">
                   {isPast ? "Completed" : "Upcoming"}
