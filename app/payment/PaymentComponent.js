@@ -37,6 +37,8 @@ const PaymentPage = () => {
     const slotArray = slotString.split(",").filter(Boolean);
 
     setActivity(activityParam);
+    setDate(dateParam);
+    setSlots(slotArray);
   }, [searchParams]);
 
   const getEndTime = (slot) => {
@@ -75,10 +77,7 @@ const PaymentPage = () => {
     }
 
     try {
-      const res = await axios.post("/api/razorpay", {
-        amount: totalAmount,
-      });
-
+      const res = await axios.post("/api/razorpay", { amount: totalAmount });
       const data = res.data;
 
       const rzp = new window.Razorpay({
