@@ -24,10 +24,10 @@ const PaymentPage = () => {
   const router = useRouter();
   const [activity, setActivity] = useState("");
   const [date, setDate] = useState("");
-  const [slots, setSlots] = useState([]);
+  const [formattedSlots, setFormattedSlots] = useState([]);
   const [pricePerHour] = useState(1500);
 
-  const totalAmount = pricePerHour * slots.length;
+  const totalAmount = pricePerHour * formattedSlots.length;
   const db = getFirestore();
 
   useEffect(() => {
@@ -36,28 +36,23 @@ const PaymentPage = () => {
     const slotString = searchParams.get("slots") || "";
     const slotArray = slotString.split(",").filter(Boolean);
 
-    setActivity(activityParam);
-    setDate(dateParam);
-    setSlots(slotArray);
-  }, [searchParams]);
-
-  const getEndTime = (slot) => {
-    const [hour] = slot.split(":").map(Number);
-    return isNaN(hour) ? "--:--" : `${String(hour + 1).padStart(2, "0")}:00`;
-  };
-
-  const saveBookingToFirestore = async (response) => {
-    const user = auth.currentUser;
-    if (!user) return;
-
-    const formattedSlots = slots.map((slot) => {
+    const convertedSlots = slotArray.map((slot) => {
       const [hour, minute] = slot.split(":").map(Number);
       const endHour = hour + 1;
       return {
         start: slot,
-        end: `${String(endHour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`
+        end: `${String(endHour).padStart(2, "0")}:${String(minute || 0).padStart(2, "0")}`,
       };
     });
+
+    setActivity(activityParam);
+    setDate(dateParam);
+    setFormattedSlots(convertedSlots);
+  }, [searchParams]);
+
+  const saveBookingToFirestore = async (response) => {
+    const user = auth.currentUser;
+    if (!user) return;
 
     await addDoc(
       collection(db, activity === "cricket" ? "Cricket_Bookings" : "Football_Bookings"),
@@ -136,7 +131,7 @@ const PaymentPage = () => {
     }
   };
 
-  if (!activity || !date || !slots.length) {
+  if (!activity || !date || !formattedSlots.length) {
     return <p className="text-center text-gray-500 mt-12">Loading booking summary...</p>;
   }
 
@@ -151,9 +146,9 @@ const PaymentPage = () => {
             <p className="text-lg font-semibold">Date: {date}</p>
             <p className="text-lg font-semibold">Slots:</p>
             <ul className="list-disc list-inside">
-              {slots.map((slot, idx) => (
+              {formattedSlots.map((slot, idx) => (
                 <li key={idx}>
-                  {slot} - {getEndTime(slot)}
+                  {slot.start} - {slot.end}
                 </li>
               ))}
             </ul>
@@ -164,7 +159,7 @@ const PaymentPage = () => {
               <span className="font-semibold">Price per Hour:</span> ₹{pricePerHour}
             </p>
             <p className="text-lg">
-              <span className="font-semibold">Total Hours:</span> {slots.length}
+              <span className="font-semibold">Total Hours:</span> {formattedSlots.length}
             </p>
             <p className="text-xl font-bold mt-4 text-green-700">
               Total: ₹{totalAmount}
