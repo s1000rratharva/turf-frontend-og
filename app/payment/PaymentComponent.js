@@ -3,15 +3,9 @@
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import {
-  collection,
-  addDoc,
-  getFirestore,
-  serverTimestamp,
-} from "firebase/firestore";
+import { collection, addDoc, getFirestore, serverTimestamp } from "firebase/firestore";
 import { auth } from "../firebase";
 import axios from "axios";
-
 
 const loadRazorpayScript = () => {
   return new Promise((resolve) => {
@@ -25,14 +19,14 @@ const loadRazorpayScript = () => {
   });
 };
 
-const PaymentComponent = () => {
+const PaymentPage = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
-
   const [activity, setActivity] = useState("");
   const [date, setDate] = useState("");
   const [slots, setSlots] = useState([]);
   const [pricePerHour] = useState(1500);
+
   const totalAmount = pricePerHour * slots.length;
   const db = getFirestore();
 
@@ -52,84 +46,97 @@ const PaymentComponent = () => {
     return isNaN(hour) ? "--:--" : `${String(hour + 1).padStart(2, "0")}:00`;
   };
 
-const handlePayment = async () => {
-  if (!auth.currentUser) {
-    toast.error("Please login to book a slot.");
-    return;
-  }
+  const saveBookingToFirestore = async (response) => {
+    const user = auth.currentUser;
+    if (!user) return;
 
-  const isScriptLoaded = await loadRazorpayScript();
-  if (!isScriptLoaded) {
-    toast.error("Razorpay SDK failed to load.");
-    return;
-  }
-
-  try {
-    const res = await axios.post("/api/razorpay", {
-      amount: totalAmount,
+    await addDoc(collection(db, activity === "cricket" ? "cricketBookings" : "footballBookings"), {
+      userId: user.uid,
+      name: user.displayName || "",
+      email: user.email,
+      activity,
+      date,
+      slots,
+      amountPaid: totalAmount,
+      razorpayPaymentId: response.razorpay_payment_id,
+      createdAt: serverTimestamp(),
     });
+  };
 
-    const data = res.data;
+  const handlePayment = async () => {
+    const user = auth.currentUser;
+    if (!user) {
+      toast.error("Please login to book.");
+      return;
+    }
 
-    const rzp = new window.Razorpay({
-      key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_hD5vT64kNs5EFN",
-      amount: totalAmount * 100,
-      currency: "INR",
-      name: "SuperKick Turf",
-      description: `Booking for ${activity}`,
-      order_id: data.id,
-      handler: async (response) => {
-        await saveBookingToFirestore(response); // <-- Make sure this function exists
-        toast.success("Booking confirmed!");
-        router.push("/your-bookings");
-      },
-      prefill: {
-        email: auth.currentUser?.email || "",
-      },
-      theme: { color: "#22c55e" },
-      config: {
-        display: {
-          blocks: {
-            upi: {
-              name: "Pay via UPI",
-              instruments: [{ method: "upi" }],
+    const isScriptLoaded = await loadRazorpayScript();
+    if (!isScriptLoaded) {
+      toast.error("Razorpay failed to load.");
+      return;
+    }
+
+    try {
+      const res = await axios.post("/api/razorpay", {
+        amount: totalAmount,
+      });
+
+      const data = res.data;
+
+      const rzp = new window.Razorpay({
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_hD5vT64kNs5EFN",
+        amount: totalAmount * 100,
+        currency: "INR",
+        name: "GreenSpot Turf",
+        description: `Booking for ${activity}`,
+        order_id: data.id,
+        handler: async (response) => {
+          await saveBookingToFirestore(response);
+          toast.success("Booking confirmed!");
+          router.push("/your-bookings");
+        },
+        prefill: {
+          name: user.displayName || "User",
+          email: user.email,
+        },
+        theme: { color: "#22c55e" },
+        config: {
+          display: {
+            blocks: {
+              upi: {
+                name: "UPI",
+                instruments: [{ method: "upi" }],
+              },
+              netbanking: {
+                name: "Netbanking",
+                instruments: [{ method: "netbanking" }],
+              },
             },
-            netbanking: {
-              name: "Pay via Netbanking",
-              instruments: [{ method: "netbanking" }],
+            sequence: ["block.upi", "block.netbanking"],
+            preferences: {
+              show_default_blocks: false,
             },
-          },
-          sequence: ["block.upi", "block.netbanking"],
-          preferences: {
-            show_default_blocks: false,
           },
         },
-      },
-    });
+      });
 
-    rzp.open();
-  } catch (err) {
-    console.error(err);
-    toast.error("Payment failed. Please try again.");
-  }
-};
+      rzp.open();
+    } catch (err) {
+      console.error(err);
+      toast.error("Payment failed.");
+    }
+  };
 
   if (!activity || !date || !slots.length) {
-    return (
-      <p className="text-center text-gray-500 mt-12">
-        Loading booking summary...
-      </p>
-    );
+    return <p className="text-center text-gray-500 mt-12">Loading booking summary...</p>;
   }
 
   return (
     <div className="p-6 max-w-3xl mx-auto bg-gradient-to-br from-gray-100 to-white min-h-screen">
       <div className="bg-white shadow-xl rounded-xl p-8">
-        <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">
-          Payment Summary
-        </h1>
+        <h1 className="text-3xl font-bold text-center mb-6">Payment Summary</h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-gray-700">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <p className="text-lg font-semibold">Activity: {activity}</p>
             <p className="text-lg font-semibold">Date: {date}</p>
@@ -160,11 +167,11 @@ const handlePayment = async () => {
           onClick={handlePayment}
           className="mt-8 w-full bg-green-600 hover:bg-green-700 text-white py-3 text-lg rounded-xl"
         >
-          Proceed to Pay ₹{totalAmount}
+          Pay ₹{totalAmount}
         </button>
       </div>
     </div>
   );
 };
 
-export default PaymentComponent;
+export default PaymentPage;
