@@ -10,6 +10,8 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { auth } from "../firebase";
+import axios from "axios";
+
 
 const loadRazorpayScript = () => {
   return new Promise((resolve) => {
@@ -51,8 +53,14 @@ const PaymentComponent = () => {
   };
 
 const handlePayment = async () => {
-  if (!user) {
+  if (!auth.currentUser) {
     toast.error("Please login to book a slot.");
+    return;
+  }
+
+  const isScriptLoaded = await loadRazorpayScript();
+  if (!isScriptLoaded) {
+    toast.error("Razorpay SDK failed to load.");
     return;
   }
 
@@ -71,7 +79,7 @@ const handlePayment = async () => {
       description: `Booking for ${activity}`,
       order_id: data.id,
       handler: async (response) => {
-        await saveBookingToFirestore(response);
+        await saveBookingToFirestore(response); // <-- Make sure this function exists
         toast.success("Booking confirmed!");
         router.push("/your-bookings");
       },
@@ -84,15 +92,11 @@ const handlePayment = async () => {
           blocks: {
             upi: {
               name: "Pay via UPI",
-              instruments: [
-                { method: "upi" }
-              ],
+              instruments: [{ method: "upi" }],
             },
             netbanking: {
               name: "Pay via Netbanking",
-              instruments: [
-                { method: "netbanking" }
-              ],
+              instruments: [{ method: "netbanking" }],
             },
           },
           sequence: ["block.upi", "block.netbanking"],
@@ -109,7 +113,6 @@ const handlePayment = async () => {
     toast.error("Payment failed. Please try again.");
   }
 };
-
 
   if (!activity || !date || !slots.length) {
     return (
