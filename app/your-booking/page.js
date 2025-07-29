@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { collection, getDocs, query, where } from "firebase/firestore";
-import { auth, db } from "../firebase"; // ✅ db = getFirestore(app)
+import { auth, db } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
@@ -44,8 +44,8 @@ const YourBookingsPage = () => {
         }));
 
         const allBookings = [...cricketBookings, ...footballBookings].sort((a, b) => {
-          const dateA = new Date(`${a.date}T${a.slots?.[0] || "00:00"}`);
-          const dateB = new Date(`${b.date}T${b.slots?.[0] || "00:00"}`);
+          const dateA = new Date(`${a.date}T${a.startTime || "00:00"}`);
+          const dateB = new Date(`${b.date}T${b.startTime || "00:00"}`);
           return dateA - dateB;
         });
 
@@ -72,8 +72,8 @@ const YourBookingsPage = () => {
 
       <div className="space-y-4">
         {bookings.map((booking) => {
-          const startTime = booking.slots?.[0] || "00:00";
-          const endTime = booking.slots?.at(-1) || "00:00";
+          const startTime = booking.startTime || "00:00";
+          const endTime = booking.endTime || "00:00";
           const isPast = new Date(`${booking.date}T${endTime}`) < new Date();
 
           return (
@@ -92,7 +92,10 @@ const YourBookingsPage = () => {
                   <p>
                     Slot: {startTime} - {endTime}
                   </p>
-                  <p>Payment ID: {booking.razorpayPaymentId}</p>
+                  <p>
+                    Payment ID:{" "}
+                    {booking.razorpayPaymentId || booking.paymentId || "N/A"}
+                  </p>
                 </div>
                 <span className="text-sm font-medium uppercase">
                   {isPast ? "Completed" : "Upcoming"}

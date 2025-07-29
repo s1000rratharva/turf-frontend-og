@@ -52,20 +52,22 @@ const PaymentPage = () => {
 
   const saveBookingToFirestore = async (response) => {
     const user = auth.currentUser;
-    if (!user) return;
+    if (!user || formattedSlots.length === 0) return;
+
+    const { start, end } = formattedSlots[0]; // Save only the first slot
 
     await addDoc(
       collection(db, activity === "cricket" ? "Cricket_Bookings" : "Football_Bookings"),
       {
         userId: user.uid,
-        name: user.displayName || "",
-        email: user.email,
-        activity,
+        userEmail: user.email,
         date,
-        slots: formattedSlots,
+        startTime: start,
+        endTime: end,
         amountPaid: totalAmount,
-        razorpayPaymentId: response.razorpay_payment_id,
-        createdAt: serverTimestamp(),
+        paymentId: response.razorpay_payment_id,
+        orderId: response.razorpay_order_id,
+        timestamp: serverTimestamp(),
       }
     );
   };
