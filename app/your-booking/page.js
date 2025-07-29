@@ -72,8 +72,8 @@ const YourBookingsPage = () => {
 
       <div className="space-y-4">
         {bookings.map((booking) => {
-          const startTime = booking.startTime || "00:00";
-          const endTime = booking.endTime || "00:00";
+          const startTime = booking.startTime || "Not specified";
+          const endTime = booking.endTime || "Not specified";
           const isPast = new Date(`${booking.date}T${endTime}`) < new Date();
 
           return (
@@ -89,9 +89,7 @@ const YourBookingsPage = () => {
                 <div>
                   <p className="font-semibold text-lg">{booking.activity}</p>
                   <p>Date: {booking.date}</p>
-                  <p>
-                    Slot: {startTime} - {endTime}
-                  </p>
+                  <p>Slot: {startTime} - {endTime}</p>
                   <p>
                     Payment ID:{" "}
                     {booking.razorpayPaymentId || booking.paymentId || "N/A"}
