@@ -46,26 +46,34 @@ const PaymentPage = () => {
     return isNaN(hour) ? "--:--" : `${String(hour + 1).padStart(2, "0")}:00`;
   };
 
-const saveBookingToFirestore = async (response) => {
-  const user = auth.currentUser;
-  if (!user) return;
+  const saveBookingToFirestore = async (response) => {
+    const user = auth.currentUser;
+    if (!user) return;
 
-  await addDoc(
-    collection(db, activity === "cricket" ? "Cricket_Bookings" : "Football_Bookings"),
-    {
-      userId: user.uid,
-      name: user.displayName || "",
-      email: user.email,
-      activity,
-      date,
-      slots,
-      amountPaid: totalAmount,
-      razorpayPaymentId: response.razorpay_payment_id,
-      createdAt: serverTimestamp(),
-    }
-  );
-};
+    const formattedSlots = slots.map((slot) => {
+      const [hour, minute] = slot.split(":").map(Number);
+      const endHour = hour + 1;
+      return {
+        start: slot,
+        end: `${String(endHour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`
+      };
+    });
 
+    await addDoc(
+      collection(db, activity === "cricket" ? "Cricket_Bookings" : "Football_Bookings"),
+      {
+        userId: user.uid,
+        name: user.displayName || "",
+        email: user.email,
+        activity,
+        date,
+        slots: formattedSlots,
+        amountPaid: totalAmount,
+        razorpayPaymentId: response.razorpay_payment_id,
+        createdAt: serverTimestamp(),
+      }
+    );
+  };
 
   const handlePayment = async () => {
     const user = auth.currentUser;
