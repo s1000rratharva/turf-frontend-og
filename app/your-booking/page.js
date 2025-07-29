@@ -72,8 +72,8 @@ const YourBookingsPage = () => {
 
       <div className="space-y-4">
         {bookings.map((booking) => {
-          const startTime = booking.startTime || "Not specified";
-          const endTime = booking.endTime || "Not specified";
+          const startTime = booking.startTime || "N/A";
+          const endTime = booking.endTime || "N/A";
           const isPast = new Date(`${booking.date}T${endTime}`) < new Date();
 
           return (
@@ -90,10 +90,8 @@ const YourBookingsPage = () => {
                   <p className="font-semibold text-lg">{booking.activity}</p>
                   <p>Date: {booking.date}</p>
                   <p>Slot: {startTime} - {endTime}</p>
-                  <p>
-                    Payment ID:{" "}
-                    {booking.razorpayPaymentId || booking.paymentId || "N/A"}
-                  </p>
+                  <p>Amount Paid: ₹{booking.amountPaid || "N/A"}</p>
+                  <p>Payment ID: {booking.paymentId || "N/A"}</p>
                 </div>
                 <span className="text-sm font-medium uppercase">
                   {isPast ? "Completed" : "Upcoming"}
