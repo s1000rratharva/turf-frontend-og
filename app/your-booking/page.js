@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { collection, getDocs, query, where } from "firebase/firestore";
-import { auth, db } from "../firebase";
+import { auth, db } from "../firebase"; // ✅ make sure db = getFirestore(app)
 import { onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
 const YourBookingsPage = () => {
   const [bookings, setBookings] = useState([]);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -44,8 +45,8 @@ const YourBookingsPage = () => {
         }));
 
         const allBookings = [...cricketBookings, ...footballBookings].sort((a, b) => {
-          const dateA = new Date(`${a.date}T${a.startTime || "00:00"}`);
-          const dateB = new Date(`${b.date}T${b.startTime || "00:00"}`);
+          const dateA = new Date(`${a.date}T${a.startTime}`);
+          const dateB = new Date(`${b.date}T${b.startTime}`);
           return dateA - dateB;
         });
 
@@ -72,9 +73,8 @@ const YourBookingsPage = () => {
 
       <div className="space-y-4">
         {bookings.map((booking) => {
-          const startTime = booking.startTime || "N/A";
-          const endTime = booking.endTime || "N/A";
-          const isPast = new Date(`${booking.date}T${endTime}`) < new Date();
+          const isPast =
+            new Date(`${booking.date}T${booking.endTime}`) < new Date();
 
           return (
             <div
@@ -89,9 +89,10 @@ const YourBookingsPage = () => {
                 <div>
                   <p className="font-semibold text-lg">{booking.activity}</p>
                   <p>Date: {booking.date}</p>
-                  <p>Slot: {startTime} - {endTime}</p>
-                  <p>Amount Paid: ₹{booking.amountPaid || "N/A"}</p>
-                  <p>Payment ID: {booking.paymentId || "N/A"}</p>
+                  <p>
+                    Slot: {booking.startTime} - {booking.endTime}
+                  </p>
+                  <p>Payment ID: {booking.paymentId}</p>
                 </div>
                 <span className="text-sm font-medium uppercase">
                   {isPast ? "Completed" : "Upcoming"}
