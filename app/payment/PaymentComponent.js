@@ -37,8 +37,6 @@ const PaymentPage = () => {
     const slotArray = slotString.split(",").filter(Boolean);
 
     setActivity(activityParam);
-    setDate(dateParam);
-    setSlots(slotArray);
   }, [searchParams]);
 
   const getEndTime = (slot) => {
@@ -93,7 +91,7 @@ const PaymentPage = () => {
         handler: async (response) => {
           await saveBookingToFirestore(response);
           toast.success("Booking confirmed!");
-          router.push("/your-bookings");
+          router.push("/your-booking");
         },
         prefill: {
           name: user.displayName || "User",
