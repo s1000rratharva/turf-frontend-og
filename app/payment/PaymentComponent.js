@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -75,7 +75,8 @@ const PaymentComponent = () => {
       if (!data.id) throw new Error("Razorpay order creation failed");
 
       const rzp = new window.Razorpay({
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_hD5vT64kNs5EFN",
+        key:
+          process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_hD5vT64kNs5EFN",
         amount: totalAmount * 100,
         currency: "INR",
         name: "SuperKick Turf",
@@ -138,6 +139,9 @@ const PaymentComponent = () => {
           netbanking: true,
           upi: true,
           card: false,
+          wallet: true,
+          emi: false,
+          paylater: false,
         },
       });
 
@@ -180,7 +184,8 @@ const PaymentComponent = () => {
 
           <div className="bg-gray-50 p-4 rounded-xl shadow-sm">
             <p className="text-lg">
-              <span className="font-semibold">Price per Hour:</span> ₹{pricePerHour}
+              <span className="font-semibold">Price per Hour:</span> ₹
+              {pricePerHour}
             </p>
             <p className="text-lg">
               <span className="font-semibold">Total Hours:</span> {slots.length}
