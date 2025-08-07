@@ -31,7 +31,7 @@ export default function Navbar() {
     });
     return () => unsub();
   }, []);
-
+  
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
   return (
