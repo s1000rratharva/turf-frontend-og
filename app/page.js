@@ -5,11 +5,11 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { auth } from "@/app/firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { 
-  MapPin, 
-  Clock, 
-  CheckCircle, 
-  ArrowRight, 
+import {
+  MapPin,
+  Clock,
+  CheckCircle,
+  ArrowRight,
   PlayCircle,
   Star,
   Users,
@@ -19,25 +19,25 @@ import {
   Zap,
   ChevronLeft,
   ChevronRight,
-  X
+  X,
 } from "lucide-react";
 
 const images = [
   {
     url: "/turf1.webp",
     title: "Premium Football Turf",
-    description: "Professional-grade artificial grass with perfect traction"
+    description: "Professional-grade artificial grass with perfect traction",
   },
   {
     url: "/turf2.webp",
     title: "Cricket Practice Nets",
-    description: "High-quality nets for batting and bowling practice"
+    description: "High-quality nets for batting and bowling practice",
   },
   {
     url: "/turf3.webp",
     title: "Multi-Sport Facility",
-    description: "Versatile space for various sports and events"
-  }
+    description: "Versatile space for various sports and events",
+  },
 ];
 
 const features = [
@@ -46,43 +46,44 @@ const features = [
     title: "Prime Location",
     description: "Central location with excellent connectivity and parking",
     gradient: "from-blue-500 to-cyan-500",
-    stats: "5 min from highway"
+    stats: "5 min from highway",
   },
   {
     icon: Clock,
     title: "Instant Booking",
-    description: "Reserve your slot in under 30 seconds with real-time availability",
+    description:
+      "Reserve your slot in under 30 seconds with real-time availability",
     gradient: "from-green-500 to-emerald-500",
-    stats: "30 sec booking"
+    stats: "30 sec booking",
   },
   {
     icon: CheckCircle,
     title: "Smart Confirmation",
     description: "AI-powered instant confirmations with weather updates",
     gradient: "from-purple-500 to-pink-500",
-    stats: "100% reliable"
+    stats: "100% reliable",
   },
   {
     icon: Shield,
     title: "Secure Payment",
     description: "Bank-level encryption with multiple payment options",
     gradient: "from-orange-500 to-red-500",
-    stats: "100% secure"
+    stats: "100% secure",
   },
   {
     icon: Smartphone,
     title: "Mobile First",
     description: "Optimized for mobile booking with one-tap reservations",
     gradient: "from-indigo-500 to-blue-500",
-    stats: "Mobile optimized"
+    stats: "Mobile optimized",
   },
   {
     icon: Zap,
     title: "Lightning Fast",
     description: "Ultra-fast booking system with instant slot updates",
     gradient: "from-yellow-500 to-amber-500",
-    stats: "Zero delays"
-  }
+    stats: "Zero delays",
+  },
 ];
 
 const testimonials = [
@@ -91,8 +92,8 @@ const testimonials = [
     role: "Football Coach",
     image: "/avatar1.jpg",
     rating: 5,
-    text: "The best turf booking experience I've had. The facility is top-notch and booking is incredibly smooth.",
-    sport: "Football"
+    text: "The best turf booking experience I&apos;ve had. The facility is top-notch and booking is incredibly smooth.",
+    sport: "Football",
   },
   {
     name: "Priya Patel",
@@ -100,7 +101,7 @@ const testimonials = [
     image: "/avatar2.jpg",
     rating: 5,
     text: "Perfect for our weekly practice sessions. The instant confirmation feature saves us so much time.",
-    sport: "Cricket"
+    sport: "Cricket",
   },
   {
     name: "Arjun Kumar",
@@ -108,8 +109,8 @@ const testimonials = [
     image: "/avatar3.jpg",
     rating: 4,
     text: "Love the mobile-friendly interface and real-time availability updates. Makes planning so easy.",
-    sport: "Both"
-  }
+    sport: "Both",
+  },
 ];
 
 export default function HomePage() {
@@ -120,7 +121,7 @@ export default function HomePage() {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => setUser(u));
-    
+
     // Auto-slide carousel
     const interval = setInterval(() => {
       if (isPlaying) {
@@ -130,12 +131,12 @@ export default function HomePage() {
 
     // Scroll effect
     const handleScroll = () => setScrollY(window.scrollY);
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
 
     return () => {
       unsubscribe();
       clearInterval(interval);
-      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener("scroll", handleScroll);
     };
   }, [isPlaying]);
 
@@ -212,11 +213,11 @@ export default function HomePage() {
             transition={{ duration: 1 }}
             className="absolute inset-0 z-0"
           >
-            <div 
+            <div
               className="w-full h-full bg-cover bg-center bg-no-repeat"
               style={{
                 backgroundImage: `url(${images[currentImage].url})`,
-                transform: `translateY(${scrollY * 0.5}px)`
+                transform: `translateY(${scrollY * 0.5}px)`,
               }}
             >
               <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px]"></div>
@@ -239,10 +240,10 @@ export default function HomePage() {
                 Booking Revolution
               </span>
             </h1>
-            
-            <p className="text-xl md:text-2xl mb-8 text-gray-200 max-w-3xl mx-auto leading-relaxed">
-              Experience the future of sports booking with our AI-powered platform. 
-              Instant reservations, real-time availability, and seamless payments.
+            <p className="text-xl text-gray-200 max-w-3xl mx-auto leading-relaxed">
+              Experience the future of sports booking with our AI-powered
+              platform. Instant reservations, real-time availability, and
+              seamless payments.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -253,12 +254,14 @@ export default function HomePage() {
                   className="bg-gradient-to-r from-green-500 to-cyan-500 hover:from-green-600 hover:to-cyan-600 text-white px-8 py-4 rounded-2xl text-lg font-bold shadow-2xl transition-all duration-300 group"
                 >
                   <span className="flex items-center gap-3">
-                    {user?.email === "keluskaratharva999@gmail.com" ? "Admin Dashboard" : "Book Instantly"}
+                    {user?.email === "keluskaratharva999@gmail.com"
+                      ? "Admin Dashboard"
+                      : "Book Instantly"}
                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                   </span>
                 </motion.button>
               </Link>
-              
+
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -283,9 +286,9 @@ export default function HomePage() {
                   setTimeout(() => setIsPlaying(true), 10000);
                 }}
                 className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                  index === currentImage 
-                    ? 'bg-white scale-125' 
-                    : 'bg-white/50 hover:bg-white/80'
+                  index === currentImage
+                    ? "bg-white scale-125"
+                    : "bg-white/50 hover:bg-white/80"
                 }`}
               />
             ))}
@@ -330,11 +333,15 @@ export default function HomePage() {
             className="text-center mb-16"
           >
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              Why <span className="bg-gradient-to-r from-green-500 to-cyan-500 bg-clip-text text-transparent">TurfBook</span> Stands Out
+              Why{" "}
+              <span className="bg-gradient-to-r from-green-500 to-cyan-500 bg-clip-text text-transparent">
+                TurfBook
+              </span>{" "}
+              Stands Out
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Revolutionizing the way you book sports facilities with cutting-edge technology 
-              and user-centric design
+              Revolutionizing the way you book sports facilities with
+              cutting-edge technology and user-centric design
             </p>
           </motion.div>
 
@@ -349,13 +356,23 @@ export default function HomePage() {
                 whileHover={{ y: -5 }}
                 className="group relative bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-500 border border-white/20"
               >
-                <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-5 rounded-3xl transition-opacity duration-500`}></div>
-                <div className={`inline-flex p-4 rounded-2xl bg-gradient-to-r ${feature.gradient} text-white mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                <div
+                  className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-5 rounded-3xl transition-opacity duration-500`}
+                ></div>
+                <div
+                  className={`inline-flex p-4 rounded-2xl bg-gradient-to-r ${feature.gradient} text-white mb-6 group-hover:scale-110 transition-transform duration-300`}
+                >
                   <feature.icon className="w-8 h-8" />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-3">{feature.title}</h3>
-                <p className="text-gray-600 mb-4 leading-relaxed">{feature.description}</p>
-                <div className="text-sm font-semibold text-gray-500">{feature.stats}</div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                  {feature.title}
+                </h3>
+                <p className="text-gray-600 mb-4 leading-relaxed">
+                  {feature.description}
+                </p>
+                <div className="text-sm font-semibold text-gray-500">
+                  {feature.stats}
+                </div>
               </motion.div>
             ))}
           </div>
@@ -373,10 +390,14 @@ export default function HomePage() {
             className="text-center mb-16"
           >
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              Loved by <span className="bg-gradient-to-r from-green-400 to-cyan-400 bg-clip-text text-transparent">Players</span>
+              Loved by{" "}
+              <span className="bg-gradient-to-r from-green-400 to-cyan-400 bg-clip-text text-transparent">
+                Players
+              </span>
             </h2>
             <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-              Hear what sports enthusiasts are saying about their TurfBook experience
+              Hear what sports enthusiasts are saying about their TurfBook
+              experience
             </p>
           </motion.div>
 
@@ -399,11 +420,15 @@ export default function HomePage() {
                     <p className="text-gray-300 text-sm">{testimonial.role}</p>
                     <div className="flex items-center gap-2 mt-1">
                       <RatingStars rating={testimonial.rating} />
-                      <span className="text-xs text-gray-400">{testimonial.sport}</span>
+                      <span className="text-xs text-gray-400">
+                        {testimonial.sport}
+                      </span>
                     </div>
                   </div>
                 </div>
-                <p className="text-gray-200 leading-relaxed">"{testimonial.text}"</p>
+                <p className="text-gray-200 leading-relaxed">
+                  "{testimonial.text}"
+                </p>
               </motion.div>
             ))}
           </div>
@@ -424,7 +449,8 @@ export default function HomePage() {
               Ready to Play Like a Pro?
             </h2>
             <p className="text-xl text-green-100 mb-8 max-w-2xl mx-auto">
-              Join thousands of players who've revolutionized their sports booking experience
+              Join thousands of players who've revolutionized their sports
+              booking experience
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/book">
@@ -433,7 +459,9 @@ export default function HomePage() {
                   whileTap={{ scale: 0.95 }}
                   className="bg-white text-green-600 hover:bg-gray-100 px-8 py-4 rounded-2xl text-lg font-bold shadow-lg transition-all duration-300"
                 >
-                  {user?.email === "keluskaratharva999@gmail.com" ? "Admin Dashboard" : "Start Booking Now"}
+                  {user?.email === "keluskaratharva999@gmail.com"
+                    ? "Admin Dashboard"
+                    : "Start Booking Now"}
                 </motion.button>
               </Link>
               <motion.button
