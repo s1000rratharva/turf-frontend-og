@@ -75,8 +75,9 @@ const PaymentComponent = () => {
     try {
       toast.loading("Creating Razorpay Order...");
 
+      // CORRECTED LINE: Using NEXT_PUBLIC_API_URL instead of NEXT_PUBLIC_BACKEND_URL
       const backendURL =
-        process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
       const res = await fetch(`${backendURL}/create-order`, {
         method: "POST",
