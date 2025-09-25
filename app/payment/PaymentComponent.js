@@ -15,10 +15,23 @@ import { Check, Clock, Calendar, CreditCard, ArrowLeft } from "lucide-react";
 const loadRazorpayScript = () =>
   new Promise((resolve) => {
     if (typeof window === "undefined") return resolve(false);
+    
+    // Check if script is already loaded
+    if (window.Razorpay) {
+      console.log("Razorpay script already loaded");
+      return resolve(true);
+    }
+
     const script = document.createElement("script");
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
+    script.onload = () => {
+      console.log("Razorpay script loaded successfully");
+      resolve(true);
+    };
+    script.onerror = () => {
+      console.error("Failed to load Razorpay script");
+      resolve(false);
+    };
     document.body.appendChild(script);
   });
 
@@ -32,6 +45,7 @@ const PaymentComponent = () => {
   const [slots, setSlots] = useState([]);
   const [pricePerHour] = useState(1500);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [backendStatus, setBackendStatus] = useState("checking");
 
   const totalAmount = pricePerHour * slots.length;
 
@@ -45,6 +59,28 @@ const PaymentComponent = () => {
     setDate(dateParam);
     setSlots(slotArray);
   }, [searchParams]);
+
+  // Test backend connection on component mount
+  useEffect(() => {
+    const testBackendConnection = async () => {
+      try {
+        const backendURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+        const response = await fetch(`${backendURL}/health`);
+        if (response.ok) {
+          setBackendStatus("connected");
+          console.log("✅ Backend connection successful");
+        } else {
+          setBackendStatus("error");
+          console.error("❌ Backend responded with error");
+        }
+      } catch (error) {
+        setBackendStatus("error");
+        console.error("❌ Backend connection failed:", error);
+      }
+    };
+
+    testBackendConnection();
+  }, []);
 
   const getEndTime = (slot) => {
     const [hour] = slot.split(":").map(Number);
@@ -63,62 +99,98 @@ const PaymentComponent = () => {
 
   const handlePayment = async () => {
     if (isProcessing) return;
-    setIsProcessing(true);
-
-    const resScript = await loadRazorpayScript();
-    if (!resScript) {
-      toast.error("Razorpay SDK failed to load.");
-      setIsProcessing(false);
+    
+    // Check if user is authenticated
+    const user = auth.currentUser;
+    if (!user) {
+      toast.error("Please log in to continue with payment");
+      router.push("/login");
       return;
     }
 
+    setIsProcessing(true);
+
     try {
-      toast.loading("Creating Razorpay Order...");
+      // Load Razorpay script
+      toast.loading("Loading payment gateway...");
+      const scriptLoaded = await loadRazorpayScript();
+      
+      if (!scriptLoaded) {
+        toast.error("Payment gateway failed to load. Please refresh the page.");
+        setIsProcessing(false);
+        return;
+      }
 
-      // CORRECTED LINE: Using NEXT_PUBLIC_API_URL instead of NEXT_PUBLIC_BACKEND_URL
-      const backendURL =
-        process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+      // Check backend connection
+      if (backendStatus !== "connected") {
+        toast.error("Server connection issue. Please try again later.");
+        setIsProcessing(false);
+        return;
+      }
 
-      const res = await fetch(`${backendURL}/create-order`, {
+      // Create order
+      toast.loading("Creating payment order...");
+      const backendURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
+      console.log("Creating order with amount:", totalAmount);
+      console.log("Backend URL:", backendURL);
+
+      const orderResponse = await fetch(`${backendURL}/create-order`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: totalAmount }),
+        headers: { 
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          amount: totalAmount,
+          currency: "INR"
+        }),
       });
 
-      const text = await res.text();
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch (err) {
-        console.error("Invalid JSON response:", text);
-        throw new Error("Backend returned invalid response");
+      console.log("Order response status:", orderResponse.status);
+
+      if (!orderResponse.ok) {
+        const errorText = await orderResponse.text();
+        console.error("Order creation failed:", errorText);
+        throw new Error(`Server error: ${orderResponse.status}`);
+      }
+
+      const orderData = await orderResponse.json();
+      console.log("Order data received:", orderData);
+
+      if (!orderData.id) {
+        throw new Error("Order ID not received from server");
       }
 
       toast.dismiss();
-      if (!data.id) throw new Error("Razorpay order creation failed");
 
-      const rzp = new window.Razorpay({
+      // Razorpay options
+      const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: totalAmount * 100,
-        currency: "INR",
-        order_id: data.id,
-
-        handler: async (response) => {
+        amount: orderData.amount, // Use amount from backend
+        currency: orderData.currency || "INR",
+        order_id: orderData.id,
+        name: "Turf Booking System",
+        description: `Booking for ${activity} - ${slots.length} slot(s) on ${date}`,
+        handler: async function (response) {
           try {
-            const user = auth.currentUser;
-            if (!user) throw new Error("User not logged in");
-
+            console.log("Payment successful:", response);
+            
             const paymentId = response.razorpay_payment_id;
             const orderId = response.razorpay_order_id;
+            const signature = response.razorpay_signature;
 
-            const activityCollection =
-              activity.toLowerCase() === "football"
-                ? "Football_Bookings"
-                : "Cricket_Bookings";
+            // Verify payment (you might want to add server-side verification)
+            toast.loading("Confirming your booking...");
 
+            const activityCollection = activity.toLowerCase() === "football" 
+              ? "Football_Bookings" 
+              : "Cricket_Bookings";
+
+            // Create booking records
             const bookingPromises = slots.map(async (slot) => {
               const [hour] = slot.split(":").map(Number);
               const endTime = `${String(hour + 1).padStart(2, "0")}:00`;
+              
               return addDoc(collection(db, activityCollection), {
                 userId: user.uid,
                 userEmail: user.email,
@@ -128,16 +200,20 @@ const PaymentComponent = () => {
                 endTime,
                 paymentId,
                 orderId,
+                signature,
                 amountPaid: pricePerHour,
                 totalAmount,
                 slotsBooked: slots.length,
+                activity: activity,
                 status: "confirmed",
                 timestamp: serverTimestamp(),
               });
             });
 
             await Promise.all(bookingPromises);
+            toast.dismiss();
 
+            // Send confirmation email (optional)
             try {
               await fetch("/api/send-confirmation", {
                 method: "POST",
@@ -149,48 +225,55 @@ const PaymentComponent = () => {
                   slots,
                   totalAmount,
                   paymentId,
+                  orderId,
                 }),
               });
             } catch (emailError) {
               console.warn("Email sending failed:", emailError);
+              // Don't show error to user - email is optional
             }
 
-            toast.success("Booking Confirmed! Redirecting...");
+            toast.success("Booking confirmed! Redirecting...");
             setTimeout(() => router.push("/your-booking"), 2000);
-          } catch (err) {
-            console.error("Booking save failed:", err);
-            toast.error("Payment successful, but failed to save booking.");
+
+          } catch (error) {
+            console.error("Booking confirmation failed:", error);
+            toast.error("Payment successful, but failed to save booking details.");
           }
         },
         prefill: {
-          email: auth.currentUser?.email || "",
-          name: auth.currentUser?.displayName || "Customer",
+          name: user.displayName || "Customer",
+          email: user.email,
+          contact: "" // You can add phone number collection
         },
         theme: {
           color: "#10b981",
           backdrop_color: "#1f2937",
         },
-        method: {
-          netbanking: true,
-          card: true,
-          upi: true,
-          wallet: false,
-          emi: false,
-          paylater: false,
-        },
-      });
+        modal: {
+          ondismiss: function() {
+            toast.error("Payment window closed");
+            setIsProcessing(false);
+          }
+        }
+      };
 
-      rzp.on("payment.failed", (response) => {
-        toast.error(`Payment failed: ${response.error.description}`);
+      console.log("Opening Razorpay checkout...");
+      
+      const rzp = new window.Razorpay(options);
+      
+      rzp.on('payment.failed', function (response) {
+        console.error('Payment failed:', response.error);
+        toast.error(`Payment failed: ${response.error.reason || response.error.description}`);
         setIsProcessing(false);
       });
 
       rzp.open();
-      setIsProcessing(false);
-    } catch (err) {
-      console.error("Payment Error:", err);
+      
+    } catch (error) {
+      console.error("Payment Error:", error);
       toast.dismiss();
-      toast.error(err.message || "Something went wrong during payment.");
+      toast.error(error.message || "Payment processing failed. Please try again.");
       setIsProcessing(false);
     }
   };
@@ -214,6 +297,7 @@ const PaymentComponent = () => {
           <button
             onClick={() => router.back()}
             className="flex items-center text-gray-600 hover:text-gray-900 mb-4 transition-colors"
+            disabled={isProcessing}
           >
             <ArrowLeft className="w-5 h-5 mr-2" />
             Back to selection
@@ -224,6 +308,28 @@ const PaymentComponent = () => {
           <p className="text-gray-600 mt-2">
             Review your selection and proceed to payment
           </p>
+          
+          {/* Backend Status Indicator */}
+          <div className="mt-2">
+            {backendStatus === "checking" && (
+              <div className="flex items-center text-yellow-600 text-sm">
+                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-yellow-600 mr-2"></div>
+                Checking server connection...
+              </div>
+            )}
+            {backendStatus === "connected" && (
+              <div className="flex items-center text-green-600 text-sm">
+                <Check className="w-4 h-4 mr-1" />
+                Server connected
+              </div>
+            )}
+            {backendStatus === "error" && (
+              <div className="flex items-center text-red-600 text-sm">
+                <span className="mr-1">⚠️</span>
+                Server connection issue
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -332,7 +438,7 @@ const PaymentComponent = () => {
                   <div className="text-sm text-green-600 font-medium">
                     Total Amount
                   </div>
-                  <div className="text-3xl font-bold text-black-900 mt-1">
+                  <div className="text-3xl font-bold text-gray-900 mt-1">
                     ₹{totalAmount}
                   </div>
                   <div className="text-xs text-green-600 mt-1">
@@ -345,11 +451,11 @@ const PaymentComponent = () => {
               {/* Payment Button */}
               <button
                 onClick={handlePayment}
-                disabled={isProcessing}
+                disabled={isProcessing || backendStatus !== "connected"}
                 className={`w-full py-4 px-6 rounded-xl font-semibold text-white transition-all relative overflow-hidden ${
-                  isProcessing
+                  isProcessing || backendStatus !== "connected"
                     ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-gradient-to-r from-green-600 to-green-600 hover:from-green-700 hover:to-green-700 shadow-lg hover:shadow-xl"
+                    : "bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 shadow-lg hover:shadow-xl transform hover:scale-105"
                 }`}
               >
                 {isProcessing ? (
@@ -357,6 +463,8 @@ const PaymentComponent = () => {
                     <div className="w-5 h-5 border-t-2 border-white border-solid rounded-full animate-spin mr-2"></div>
                     Processing...
                   </div>
+                ) : backendStatus !== "connected" ? (
+                  "Server Connection Issue"
                 ) : (
                   <div className="flex items-center justify-center">
                     <CreditCard className="w-5 h-5 mr-2" />
@@ -388,6 +496,14 @@ const PaymentComponent = () => {
                 <div className="flex items-start">
                   <Check className="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
                   <span>Instant confirmation</span>
+                </div>
+                <div className="flex items-start">
+                  <Check className="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>SSL encrypted</span>
+                </div>
+                <div className="flex items-start">
+                  <Check className="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Multiple payment methods</span>
                 </div>
               </div>
             </div>

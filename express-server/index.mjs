@@ -7,15 +7,18 @@ dotenv.config();
 
 const app = express();
 
-// Configure CORS to allow requests from your frontend domain
-// Replace the placeholder with your actual Vercel domain
-const corsOptions = {
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  optionsSuccessStatus: 200 // For legacy browser support
-};
+// Improved CORS configuration
+app.use(cors({
+  origin: [
+    "http://localhost:3000", 
+    "https://turf-frontend-og.vercel.app/", // Add your actual frontend domain
+    process.env.FRONTEND_URL // You can set this in Render environment variables
+  ],
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
 
-// Use the cors middleware with the specified options
-app.use(cors(corsOptions));
 app.use(express.json());
 
 const razorpay = new Razorpay({
@@ -23,9 +26,21 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
+// Add a health check endpoint
+app.get("/health", (req, res) => {
+  res.json({ status: "OK", message: "Server is running" });
+});
+
 app.post("/create-order", async (req, res) => {
-  console.log("Hello from create-order endpoint");
+  console.log("Received create-order request");
+  console.log("Request body:", req.body);
+  
   const { amount } = req.body;
+
+  // Validate amount
+  if (!amount || amount <= 0) {
+    return res.status(400).json({ error: "Valid amount is required" });
+  }
 
   const options = {
     amount: amount * 100, // amount in paise
@@ -39,7 +54,10 @@ app.post("/create-order", async (req, res) => {
     res.json(order);
   } catch (err) {
     console.error("Razorpay Error:", err);
-    res.status(500).json({ error: "Failed to create Razorpay order" });
+    res.status(500).json({ 
+      error: "Failed to create Razorpay order",
+      details: err.error ? err.error.description : err.message 
+    });
   }
 });
 
