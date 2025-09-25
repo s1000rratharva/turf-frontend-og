@@ -75,7 +75,7 @@ export default function Navbar() {
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-3 group">
             <div className="relative">
-              <Image
+              <img
                 src="/logo.png"
                 alt="GreenSpot Turf"
                 className="h-10 w-10 rounded-xl shadow-lg group-hover:scale-105 transition-transform duration-300"
