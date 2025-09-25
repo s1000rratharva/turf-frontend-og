@@ -1,148 +1,49 @@
 "use client";
 
-import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import toast from "react-hot-toast";
-import {
-  collection,
-  addDoc,
-  getFirestore,
-  serverTimestamp,
-} from "firebase/firestore";
-import { auth } from "../firebase";
-import { Check, Clock, Calendar, CreditCard, ArrowLeft } from "lucide-react";
 
-// ✅ Razorpay loader
-const loadRazorpayScript = () =>
-  new Promise((resolve) => {
-    if (typeof window === "undefined") return resolve(false);
-    if (window.Razorpay) return resolve(true);
+export default function PaymentPage() {
+  const [loading, setLoading] = useState(false);
 
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
-    document.body.appendChild(script);
-  });
-
-const PaymentComponent = () => {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const db = getFirestore();
-
-  const [activity, setActivity] = useState("");
-  const [date, setDate] = useState("");
-  const [slots, setSlots] = useState([]);
-  const [pricePerHour] = useState(1500);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [backendStatus, setBackendStatus] = useState("checking");
-
-  const totalAmount = pricePerHour * slots.length;
-
-  useEffect(() => {
-    const activityParam = searchParams.get("activity") || "";
-    const dateParam = searchParams.get("date") || "";
-    const slotString = searchParams.get("slots") || "";
-    const slotArray = slotString.split(",").filter(Boolean);
-
-    setActivity(activityParam);
-    setDate(dateParam);
-    setSlots(slotArray);
-  }, [searchParams]);
-
-  // ✅ Backend health check
-  useEffect(() => {
-    const testBackendConnection = async () => {
-      try {
-        const backendURL =
-          process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-        const response = await fetch(`${backendURL}/health`);
-        if (response.ok) {
-          setBackendStatus("connected");
-        } else {
-          setBackendStatus("error");
-        }
-      } catch (error) {
-        setBackendStatus("error");
-      }
-    };
-
-    testBackendConnection();
-  }, []);
-
-  // ✅ Updated handlePayment
   const handlePayment = async () => {
-    if (isProcessing) return;
-
-    const user = auth.currentUser;
-    if (!user) {
-      toast.error("Please log in to continue with payment");
-      router.push("/login");
-      return;
-    }
-
-    setIsProcessing(true);
+    setLoading(true);
 
     try {
-      const scriptLoaded = await loadRazorpayScript();
-      if (!scriptLoaded) {
-        toast.error("Payment gateway failed to load.");
-        setIsProcessing(false);
-        return;
-      }
-
-      if (backendStatus !== "connected") {
-        toast.error("Server connection issue.");
-        setIsProcessing(false);
-        return;
-      }
-
-      const backendURL =
-        process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-      const orderResponse = await fetch(`${backendURL}/create-order`, {
+      const res = await fetch("/api/razorpay", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          amount: totalAmount,
+          amount: 500, // amount in rupees
           currency: "INR",
         }),
       });
 
-      const orderData = await orderResponse.json();
+      const data = await res.json();
+
+      if (!data.id) {
+        toast.error("Order creation failed!");
+        setLoading(false);
+        return;
+      }
 
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: orderData.amount,
-        currency: orderData.currency,
-        order_id: orderData.id,
-        name: "Turf Booking System",
-        description: `Booking for ${activity} - ${slots.length} slot(s) on ${date}`,
-        handler: async function (response) {
-          toast.success("Payment successful!");
-          // here keep your Firestore booking logic
-        },
-        prefill: {
-          name: user.displayName || "Customer",
-          email: user.email,
-        },
+        amount: data.amount,
+        currency: data.currency,
+        name: "SuperKick Turf",
+        description: "Booking Payment",
+        order_id: data.id,
         theme: {
-          color: "#10b981",
+          color: "#0d9488",
         },
-        config: {
-          display: {
-            blocks: {
-              banks: {
-                name: "All Payment Methods",
-                instruments: [
-                  { method: "upi" },
-                  { method: "card" },
-                  { method: "netbanking" },
-                  { method: "wallet" },
-                ],
-              },
-            },
-            sequence: ["block.banks"],
-            preferences: { show_default_blocks: true },
+        handler: function (response) {
+          toast.success("Payment Successful!");
+          console.log("Payment success:", response);
+        },
+        modal: {
+          ondismiss: function () {
+            toast("Payment popup closed!");
           },
         },
       };
@@ -150,17 +51,31 @@ const PaymentComponent = () => {
       const rzp = new window.Razorpay(options);
       rzp.open();
     } catch (error) {
-      toast.error(error.message || "Payment failed.");
-      setIsProcessing(false);
+      console.error("Payment error:", error);
+      toast.error("Payment failed!");
+    } finally {
+      setLoading(false);
     }
   };
 
-  // ✅ Keep ALL your JSX (UI) here as it was
   return (
-    <div>
-      {/* paste your existing UI code here unchanged */}
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-6">
+      <div className="bg-white shadow-lg rounded-2xl p-8 w-full max-w-md text-center">
+        <h1 className="text-2xl font-bold text-gray-800 mb-4">
+          Complete Your Payment
+        </h1>
+        <p className="text-gray-600 mb-6">
+          Book your slot securely with Razorpay.
+        </p>
+
+        <button
+          onClick={handlePayment}
+          disabled={loading}
+          className="w-full bg-emerald-600 text-white py-3 px-6 rounded-xl font-semibold shadow-md hover:bg-emerald-700 transition disabled:opacity-50"
+        >
+          {loading ? "Processing..." : "Pay ₹500"}
+        </button>
+      </div>
     </div>
   );
-};
-
-export default PaymentComponent;
+}
