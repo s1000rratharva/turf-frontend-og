@@ -68,20 +68,22 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     setError("");
     setIsLoading(true);
-    
+
     try {
       await signInWithPopup(auth, googleProvider);
       toast.success("✅ Google Sign-In Successful");
       router.push("/book");
     } catch (err) {
-      console.error("Google Sign-In Error:", err);
-      if (err?.code === "auth/popup-closed-by-user") {
+      // Catch specific errors for better user feedback
+      if (err.code === "auth/popup-closed-by-user") {
         setError("Sign-in popup was closed. Please try again.");
-      } else if (err?.code === "auth/cancelled-popup-request") {
+      } else if (err.code === "auth/cancelled-popup-request") {
         setError("Sign-in was interrupted. Please try again.");
       } else {
+        console.error("Google Sign-In Error:", err);
         setError("Google Sign-In failed. Please try again.");
       }
+    } finally {
       setIsLoading(false);
     }
   };
@@ -217,8 +219,8 @@ export default function LoginPage() {
 
           {/* Help Text */}
           <p className="text-sm text-gray-600 text-center mt-4 leading-relaxed">
-            {isRegister 
-              ? "Already have an account? " 
+            {isRegister
+              ? "Already have an account? "
               : "Don't have an account? "
             }
             <button
