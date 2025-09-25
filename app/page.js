@@ -21,6 +21,7 @@ import {
   ChevronRight,
   X,
 } from "lucide-react";
+import Footer from "./components/Footer";
 
 const images = [
   {
@@ -44,7 +45,7 @@ const features = [
   {
     icon: MapPin,
     title: "Prime Location",
-    description: "Central location with excellent connectivity and parking",
+    description: "Central location with excellent connectivity",
     gradient: "from-blue-500 to-cyan-500",
     stats: "5 min from highway",
   },
@@ -59,7 +60,7 @@ const features = [
   {
     icon: CheckCircle,
     title: "Smart Confirmation",
-    description: "AI-powered instant confirmations with weather updates",
+    description: "Instant confirmations with updates",
     gradient: "from-purple-500 to-pink-500",
     stats: "100% reliable",
   },
@@ -92,7 +93,7 @@ const testimonials = [
     role: "Football Coach",
     image: "/avatar1.jpg",
     rating: 5,
-    text: "The best turf booking experience I&apos;ve had. The facility is top-notch and booking is incredibly smooth.",
+    text: "The best turf booking experience I have had. The facility is top-notch and booking is incredibly smooth.",
     sport: "Football",
   },
   {
@@ -241,7 +242,7 @@ export default function HomePage() {
               </span>
             </h1>
             <p className="text-xl text-gray-200 max-w-3xl mx-auto leading-relaxed">
-              Experience the future of sports booking with our AI-powered
+              Experience the future of sports booking with our
               platform. Instant reservations, real-time availability, and
               seamless payments.
             </p>
@@ -262,16 +263,6 @@ export default function HomePage() {
                 </motion.button>
               </Link>
 
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="border-2 border-white/30 backdrop-blur-sm hover:border-white text-white px-8 py-4 rounded-2xl text-lg font-bold transition-all duration-300 group"
-              >
-                <span className="flex items-center gap-3">
-                  <PlayCircle className="w-5 h-5" />
-                  Watch Demo
-                </span>
-              </motion.button>
             </div>
           </motion.div>
 
@@ -427,7 +418,7 @@ export default function HomePage() {
                   </div>
                 </div>
                 <p className="text-gray-200 leading-relaxed">
-                  "{testimonial.text}"
+                  {testimonial.text}
                 </p>
               </motion.div>
             ))}
@@ -449,7 +440,7 @@ export default function HomePage() {
               Ready to Play Like a Pro?
             </h2>
             <p className="text-xl text-green-100 mb-8 max-w-2xl mx-auto">
-              Join thousands of players who've revolutionized their sports
+              Join thousands of players who&apos;ve revolutionized their sports
               booking experience
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -464,17 +455,11 @@ export default function HomePage() {
                     : "Start Booking Now"}
                 </motion.button>
               </Link>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="border-2 border-white text-white hover:bg-white/10 px-8 py-4 rounded-2xl text-lg font-bold backdrop-blur-sm transition-all duration-300"
-              >
-                Learn More
-              </motion.button>
             </div>
           </motion.div>
         </div>
       </section>
+      <Footer />
     </div>
   );
-}
+}   

@@ -2,6 +2,7 @@ import express from "express";
 import Razorpay from "razorpay";
 import cors from "cors";
 import dotenv from "dotenv";
+
 dotenv.config();
 
 const app = express();
@@ -14,6 +15,7 @@ const razorpay = new Razorpay({
 });
 
 app.post("/create-order", async (req, res) => {
+  console.log("Hello from create-order endpoint");
   const { amount } = req.body;
 
   const options = {
@@ -24,10 +26,10 @@ app.post("/create-order", async (req, res) => {
 
   try {
     const order = await razorpay.orders.create(options);
-    console.log("✅ Razorpay Order Created:", order);
+    console.log("Razorpay Order Created:", order);
     res.json(order);
   } catch (err) {
-    console.error("❌ Razorpay Error:", err);
+    console.error("Razorpay Error:", err);
     res.status(500).json({ error: "Failed to create Razorpay order" });
   }
 });
