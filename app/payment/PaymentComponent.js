@@ -15,6 +15,16 @@ import {
   CheckCircle,
 } from "lucide-react";
 
+// Helper function to calculate the end time for a given slot array.
+// If given ["10:00"], it returns "11:00". If given ["10:00", "11:00"], it returns "12:00".
+const getEndTime = (slots) => {
+  if (!slots || slots.length === 0) return "";
+  const lastSlot = slots[slots.length - 1];
+  const [hour] = lastSlot.split(":");
+  const endHour = parseInt(hour) + 1;
+  return `${String(endHour).padStart(2, "0")}:00`;
+};
+
 export default function PaymentComponent() {
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(null);
@@ -84,6 +94,7 @@ export default function PaymentComponent() {
     return () => unsubscribe();
   }, [searchParams, router]);
 
+  // *** MODIFICATION HERE: Storing the full 'slots' array as 'selectedSlots' ***
   const saveBookingToFirebase = async (paymentDetails) => {
     if (!user || !bookingDetails) return;
 
@@ -93,8 +104,7 @@ export default function PaymentComponent() {
         userEmail: user.email,
         activity: bookingDetails.activity,
         date: bookingDetails.date,
-        startTime: bookingDetails.slots[0],
-        endTime: getEndTime(bookingDetails.slots),
+        selectedSlots: bookingDetails.slots, // Store the array of slots for individual display later
         slotsBooked: bookingDetails.slotsCount,
         amountPaid: bookingDetails.amount,
         paymentId: paymentDetails.razorpay_payment_id,
@@ -104,10 +114,11 @@ export default function PaymentComponent() {
         status: "confirmed",
       };
 
+      // The collection name now dynamically includes the activity
       const collectionName = `${bookingDetails.activity}_Bookings`;
       await addDoc(collection(db, collectionName), bookingData);
 
-      toast.success("Booking confirmed successfully!");
+      toast.success("Booking confirmed successfully! You can view the full slot list in your bookings.");
       router.push("/your-booking");
     } catch (error) {
       console.error("Error saving booking:", error);
@@ -115,13 +126,6 @@ export default function PaymentComponent() {
         "Payment successful but booking save failed. Please contact support."
       );
     }
-  };
-
-  const getEndTime = (slots) => {
-    const lastSlot = slots[slots.length - 1];
-    const [hour] = lastSlot.split(":");
-    const endHour = parseInt(hour) + 1;
-    return `${String(endHour).padStart(2, "0")}:00`;
   };
 
   const handlePayment = async () => {
@@ -174,6 +178,7 @@ export default function PaymentComponent() {
         },
         handler: async function (response) {
           setLoading(true);
+          // Pass payment details to the save function
           await saveBookingToFirebase(response);
           setLoading(false);
         },
@@ -262,22 +267,27 @@ export default function PaymentComponent() {
                 </span>
               </div>
 
-              <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                <div className="flex items-center">
-                  <Clock className="w-5 h-5 text-gray-400 mr-3" />
+              {/* *** MODIFICATION HERE: Displaying all selected slots individually *** */}
+              <div className="flex justify-between py-3 border-b border-gray-100 items-start">
+                <div className="flex items-start">
+                  <Clock className="w-5 h-5 text-gray-400 mr-3 mt-1" />
                   <span className="text-gray-600">Time Slots</span>
                 </div>
-                <div className="text-right">
-                  <div className="font-semibold text-gray-900">
-                    {bookingDetails.slots[0]} -{" "}
-                    {getEndTime(bookingDetails.slots)}
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    {bookingDetails.slotsCount} hour
+                <div className="text-right flex flex-col items-end">
+                  {/* List all selected slots */}
+                  {bookingDetails.slots.map((slot, index) => (
+                    <div key={index} className="font-semibold text-gray-900">
+                      {slot} - {getEndTime([slot])}
+                    </div>
+                  ))}
+                  {/* Show the total count */}
+                  <div className="text-sm text-gray-500 mt-2">
+                    Total: {bookingDetails.slotsCount} hour
                     {bookingDetails.slotsCount > 1 ? "s" : ""}
                   </div>
                 </div>
               </div>
+              {/* *** END OF MODIFICATION *** */}
 
               <div className="flex items-center justify-between py-3">
                 <div className="flex items-center">

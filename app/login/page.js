@@ -71,7 +71,7 @@ export default function LoginPage() {
 
     try {
       await signInWithPopup(auth, googleProvider);
-      toast.success("✅ Google Sign-In Successful");
+      toast.success("Google Sign-In Successful");
       router.push("/book");
     } catch (err) {
       // Catch specific errors for better user feedback
