@@ -1,6 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Toaster } from 'react-hot-toast';
+import { Toaster } from "react-hot-toast";
 import Navbar from "./components/Navbar";
 
 const geistSans = Geist({
@@ -23,20 +23,28 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <head>
+        <script
+          src="https://checkout.razorpay.com/v1/checkout.js"
+          async
+        ></script>
+      </head>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
         <Navbar />
         {children}
         <Toaster
           position="top-right"
           containerStyle={{
-            top: '80px',
-            right: '16px',
+            top: "80px",
+            right: "16px",
           }}
           toastOptions={{
             style: {
-              borderRadius: '8px',
-              background: '#fff',
-              color: '#333',
+              borderRadius: "8px",
+              background: "#fff",
+              color: "#333",
             },
           }}
         />
