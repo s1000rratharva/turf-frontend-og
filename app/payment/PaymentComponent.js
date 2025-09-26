@@ -9,16 +9,19 @@ export default function PaymentPage() {
   const handlePayment = async () => {
     setLoading(true);
 
-    try {
-      const res = await fetch("/api/razorpay", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount: 500, // amount in rupees
-          currency: "INR",
-        }),
-      });
+try {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_LOCAL_API_URL;
 
+  const res = await fetch(`${apiUrl}/api/razorpay`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      amount: 500, // amount in rupees
+      currency: "INR",
+    }),
+  });
       const data = await res.json();
 
       if (!data.id) {
