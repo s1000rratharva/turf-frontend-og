@@ -25,17 +25,17 @@ import Footer from "./components/Footer";
 
 const images = [
   {
-    url: "/turf1.webp",
+    url: "/turf1.jpg", // Corrected path (assuming .jpg and in public folder)
     title: "Premium Football Turf",
     description: "Professional-grade artificial grass with perfect traction",
   },
   {
-    url: "/turf2.webp",
+    url: "/turf2.jpg", // Corrected path (assuming .jpg and in public folder)
     title: "Cricket Practice Nets",
     description: "High-quality nets for batting and bowling practice",
   },
   {
-    url: "/turf3.webp",
+    url: "/turf3.jpg",
     title: "Multi-Sport Facility",
     description: "Versatile space for various sports and events",
   },
@@ -201,7 +201,7 @@ export default function HomePage() {
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-r from-blue-200 to-purple-200 rounded-full blur-3xl opacity-30 animate-pulse delay-1000"></div>
       </div>
 
-      {/* Hero Section with Parallax */}
+      {/* Hero Section */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden">
         <AnimatePresence mode="wait">
           <motion.div
@@ -260,16 +260,10 @@ export default function HomePage() {
               </Link>
             </div>
           </motion.div>
-
-          {/* Removed Image Indicator */}
-          {/* Removed Navigation Arrows */}
         </div>
       </section>
 
-      {/* Spacer to push content down */}
-      <div className="h-screen"></div>
-
-      {/* Stats Section */}
+      {/* Stats Section (Starts immediately after Hero) */}
       <section className="relative py-20 bg-white/80 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
