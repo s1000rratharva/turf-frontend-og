@@ -12,7 +12,7 @@ export default function PaymentPage() {
 try {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_LOCAL_API_URL;
 
-  const res = await fetch(`${apiUrl}/api/razorpay`, {
+const res = await fetch(`${apiUrl}/create-order`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
