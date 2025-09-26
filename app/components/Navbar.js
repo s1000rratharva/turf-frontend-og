@@ -51,7 +51,7 @@ export default function Navbar() {
 
   const navItems = [
     ...(!isAdmin ? [
-      { href: "#location", label: "Location", icon: MapPin, isAnchor: true },
+      
       { href: "/book", label: "Book a Slot", icon: Calendar },
       ...(user ? [{ href: "/your-booking", label: "Your Bookings", icon: Receipt }] : [])
     ] : []),

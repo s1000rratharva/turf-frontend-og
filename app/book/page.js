@@ -9,11 +9,11 @@ import {
   where,
   addDoc,
   deleteDoc,
+  doc,
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
-import { doc } from "firebase/firestore";
 
 const SLOT_TIMES = Array.from({ length: 18 }, (_, i) => i + 6);
 
@@ -78,16 +78,15 @@ export default function BookingPage() {
   };
 
   const handleSelectSlot = (slot) => {
-    // First check if slot is in the past for the selected date
     const now = new Date();
     const today = now.toISOString().split('T')[0];
-    const slotDateTime = new Date(selectedDate + 'T' + slot);
+    const slotDateTime = new Date(`${selectedDate}T${slot}`);
     const isPast = selectedDate === today && slotDateTime < now;
-    
+
     if (bookedSlots.includes(slot) || blockedSlots.includes(slot) || isPast) {
       return;
     }
-    
+
     setSelectedSlots((prev) =>
       prev.includes(slot) ? prev.filter((s) => s !== slot) : [...prev, slot]
     );
@@ -141,7 +140,6 @@ export default function BookingPage() {
     }
   };
 
-  // Fixed date functions
   const getMinDate = () => {
     const today = new Date();
     return today.toISOString().split('T')[0];
@@ -191,11 +189,9 @@ export default function BookingPage() {
     const endHour = hour + 1;
     const slotLabel = `${String(hour).padStart(2, "0")}:00 - ${String(endHour).padStart(2, "0")}:00`;
 
-    // Determine button text and styles based on state
     let buttonText = "Available";
     let buttonClass = "bg-white border-gray-300 text-gray-700 hover:border-green-500";
     let statusDot = null;
-    let overlayText = "";
 
     if (isBooked) {
       buttonText = "Booked";
@@ -248,73 +244,71 @@ export default function BookingPage() {
       >
         <span className="text-sm font-medium">{slotLabel}</span>
         {statusDot}
-        
+
         {isDisabled && (
-          <div className="absolute inset-0 bg-white bg-opacity-80 rounded-lg flex items-center justify-center">
-            <span className="text-xs font-medium">{buttonText}</span>
+          <div className="absolute inset-0 rounded-lg flex items-center justify-center text-xs font-medium bg-white bg-opacity-80">
+            {buttonText}
           </div>
         )}
-        
+
       </button>
     );
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50 py-8 px-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50 py-8 px-4 sm:px-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-2">
+          <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-2">
             Book Your Session
           </h1>
-          <p className="text-gray-600">Select your activity, choose a date, and pick your preferred time slot</p>
+          <p className="text-gray-600 text-sm sm:text-base">Select your activity, choose a date, and pick your preferred time slot</p>
         </div>
 
         {/* Progress Steps */}
-        <div className="flex justify-center mb-12">
-          <div className="flex items-center space-x-4">
-            {['Activity', 'Date', 'Time', 'Payment'].map((step, index) => {
-              const currentStep = activity ? (selectedDate ? (selectedSlots.length ? 3 : 2) : 1) : 0;
-              const isCompleted = index < currentStep;
-              const isActive = index === currentStep;
+        <div className="flex flex-wrap justify-center mb-12">
+          {['Activity', 'Date', 'Time', 'Payment'].map((step, index) => {
+            const currentStep = activity ? (selectedDate ? (selectedSlots.length ? 3 : 2) : 1) : 0;
+            const isCompleted = index < currentStep;
+            const isActive = index === currentStep;
 
-              return (
-                <div key={step} className="flex items-center">
-                  <div className={`flex items-center ${
-                    isCompleted ? 'text-green-600' : isActive ? 'text-green-600' : 'text-gray-400'
-                  }`}>
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 font-semibold ${
-                      isCompleted 
-                        ? 'bg-green-600 border-green-600 text-white' 
-                        : isActive 
-                        ? 'border-green-600 bg-white text-green-600' 
+            return (
+              <div key={step} className="flex items-center">
+                <div className={`flex items-center ${
+                  isCompleted ? 'text-green-600' : isActive ? 'text-green-600' : 'text-gray-400'
+                }`}>
+                  <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center border-2 font-semibold ${
+                    isCompleted
+                      ? 'bg-green-600 border-green-600 text-white'
+                      : isActive
+                        ? 'border-green-600 bg-white text-green-600'
                         : 'border-gray-300 bg-white text-gray-400'
-                    }`}>
-                      {isCompleted ? '✓' : index + 1}
-                    </div>
-                    <span className="text-sm ml-3 font-medium">{step}</span>
+                  }`}>
+                    {isCompleted ? '✓' : index + 1}
                   </div>
-                  {index < 3 && (
-                    <div className={`w-16 h-1 mx-4 ${
-                      isCompleted ? 'bg-green-600' : 'bg-gray-300'
-                    }`}></div>
-                  )}
+                  <span className="text-xs sm:text-sm ml-2 font-medium">{step}</span>
                 </div>
-              );
-            })}
-          </div>
+                {index < 3 && (
+                  <div className={`w-10 sm:w-16 h-1 mx-2 ${
+                    isCompleted ? 'bg-green-600' : 'bg-gray-300'
+                  }`}></div>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         {/* 1. Choose Activity */}
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 mb-8">
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 sm:p-8 mb-8">
           <div className="flex items-center mb-6">
-            <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center mr-3">
+            <div className="w-8 h-8 sm:w-8 sm:h-8 bg-green-600 rounded-full flex items-center justify-center mr-3">
               <span className="text-white font-bold">1</span>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900">Choose an Activity</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Choose an Activity</h2>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             <ActivityCard
               type="Football"
               title="5v5 Football Turf"
@@ -332,20 +326,20 @@ export default function BookingPage() {
 
         {/* 2. Select Date */}
         {activity && (
-          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 mb-8">
+          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 sm:p-8 mb-8">
             <div className="flex items-center mb-6">
-              <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center mr-3">
+              <div className="w-8 h-8 sm:w-8 sm:h-8 bg-green-600 rounded-full flex items-center justify-center mr-3">
                 <span className="text-white font-bold">2</span>
               </div>
-              <h2 className="text-2xl font-bold text-gray-900">Select Date</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Select Date</h2>
             </div>
-            
+
             <div className="max-w-md">
               <label className="block text-sm font-medium text-gray-700 mb-2">Choose your preferred date</label>
               <div className="relative">
                 <input
                   type="date"
-                  className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all"
+                  className="w-full p-3 sm:p-4 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all"
                   value={selectedDate}
                   min={getMinDate()}
                   max={getMaxDate()}
@@ -353,12 +347,12 @@ export default function BookingPage() {
                 />
               </div>
               {selectedDate && (
-                <p className="text-green-600 text-sm mt-2">
-                  Selected: {new Date(selectedDate).toLocaleDateString('en-IN', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
+                <p className="text-green-600 text-xs sm:text-sm mt-2">
+                  Selected: {new Date(selectedDate).toLocaleDateString('en-IN', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
                   })}
                 </p>
               )}
@@ -368,13 +362,13 @@ export default function BookingPage() {
 
         {/* 3. Select Slot */}
         {activity && selectedDate && (
-          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
+          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 sm:p-8">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center">
-                <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center mr-3">
+                <div className="w-8 h-8 sm:w-8 sm:h-8 bg-green-600 rounded-full flex items-center justify-center mr-3">
                   <span className="text-white font-bold">3</span>
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900">Select Time Slot</h2>
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Select Time Slot</h2>
               </div>
               {selectedSlots.length > 0 && (
                 <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
@@ -394,13 +388,10 @@ export default function BookingPage() {
                     const time = `${String(hour).padStart(2, "0")}:00`;
                     const isBooked = bookedSlots.includes(time);
                     const isBlocked = blockedSlots.includes(time);
-                    
-                    // Fixed past slot logic
                     const now = new Date();
                     const today = now.toISOString().split('T')[0];
                     const slotDateTime = new Date(selectedDate + 'T' + time);
                     const isPast = selectedDate === today && slotDateTime < now;
-                    
                     const isSelected = selectedSlots.includes(time);
 
                     return (
@@ -447,7 +438,7 @@ export default function BookingPage() {
                     <button
                       onClick={handleBlockSlots}
                       disabled={selectedSlots.length === 0}
-                      className={`px-8 py-4 rounded-xl font-semibold text-white transition-all ${
+                      className={`px-6 py-3 sm:px-8 sm:py-4 rounded-xl font-semibold text-white transition-all text-sm sm:text-base ${
                         selectedSlots.length === 0
                           ? "bg-gray-300 cursor-not-allowed"
                           : "bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 shadow-lg hover:shadow-xl"
@@ -459,7 +450,7 @@ export default function BookingPage() {
                     <button
                       onClick={handleProceedToPayment}
                       disabled={selectedSlots.length === 0}
-                      className={`px-8 py-4 rounded-xl font-semibold text-white transition-all ${
+                      className={`px-6 py-3 sm:px-8 sm:py-4 rounded-xl font-semibold text-white transition-all text-sm sm:text-base ${
                         selectedSlots.length === 0
                           ? "bg-gray-300 cursor-not-allowed"
                           : "bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 shadow-lg hover:shadow-xl"

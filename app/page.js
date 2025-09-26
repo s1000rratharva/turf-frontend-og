@@ -123,14 +123,12 @@ export default function HomePage() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => setUser(u));
 
-    // Auto-slide carousel
     const interval = setInterval(() => {
       if (isPlaying) {
         setCurrentImage((prev) => (prev + 1) % images.length);
       }
     }, 5000);
 
-    // Scroll effect
     const handleScroll = () => setScrollY(window.scrollY);
     window.addEventListener("scroll", handleScroll);
 
@@ -204,7 +202,7 @@ export default function HomePage() {
       </div>
 
       {/* Hero Section with Parallax */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      <section className="relative h-screen flex items-center justify-center overflow-hidden">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentImage}
@@ -215,10 +213,9 @@ export default function HomePage() {
             className="absolute inset-0 z-0"
           >
             <div
-              className="w-full h-full bg-cover bg-center bg-no-repeat"
+              className="w-full h-full bg-cover bg-center bg-no-repeat bg-fixed"
               style={{
                 backgroundImage: `url(${images[currentImage].url})`,
-                transform: `translateY(${scrollY * 0.5}px)`,
               }}
             >
               <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px]"></div>
@@ -242,9 +239,8 @@ export default function HomePage() {
               </span>
             </h1>
             <p className="text-xl text-gray-200 max-w-3xl mx-auto leading-relaxed">
-              Experience the future of sports booking with our
-              platform. Instant reservations, real-time availability, and
-              seamless payments.
+              Experience the future of sports booking with our platform. Instant
+              reservations, real-time availability, and seamless payments.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -252,9 +248,9 @@ export default function HomePage() {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="bg-gradient-to-r from-green-500 to-cyan-500 hover:from-green-600 hover:to-cyan-600 text-white px-8 py-4 rounded-2xl text-lg font-bold shadow-2xl transition-all duration-300 group"
+                  className="bg-gradient-to-r mt-5 from-green-500 to-cyan-500 hover:from-green-600 hover:to-cyan-600 text-white px-8 py-4 rounded-2xl text-lg font-bold shadow-2xl transition-all duration-300 group"
                 >
-                  <span className="flex items-center gap-3">
+                  <span className="flex items-center gap-3 ">
                     {user?.email === "keluskaratharva999@gmail.com"
                       ? "Admin Dashboard"
                       : "Book Instantly"}
@@ -262,44 +258,16 @@ export default function HomePage() {
                   </span>
                 </motion.button>
               </Link>
-
             </div>
           </motion.div>
 
-          {/* Image Indicator */}
-          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-3">
-            {images.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => {
-                  setCurrentImage(index);
-                  setIsPlaying(false);
-                  setTimeout(() => setIsPlaying(true), 10000);
-                }}
-                className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                  index === currentImage
-                    ? "bg-white scale-125"
-                    : "bg-white/50 hover:bg-white/80"
-                }`}
-              />
-            ))}
-          </div>
-
-          {/* Navigation Arrows */}
-          <button
-            onClick={prevImage}
-            className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white p-3 rounded-full backdrop-blur-sm transition-all duration-300"
-          >
-            <ChevronLeft className="w-6 h-6" />
-          </button>
-          <button
-            onClick={nextImage}
-            className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white p-3 rounded-full backdrop-blur-sm transition-all duration-300"
-          >
-            <ChevronRight className="w-6 h-6" />
-          </button>
+          {/* Removed Image Indicator */}
+          {/* Removed Navigation Arrows */}
         </div>
       </section>
+
+      {/* Spacer to push content down */}
+      <div className="h-screen"></div>
 
       {/* Stats Section */}
       <section className="relative py-20 bg-white/80 backdrop-blur-sm">
@@ -462,4 +430,4 @@ export default function HomePage() {
       <Footer />
     </div>
   );
-}   
+}

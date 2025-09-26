@@ -265,9 +265,6 @@ const YourBookingsPage = () => {
                         <span className="text-sm text-gray-600">
                           {Math.ceil((bookingDateTime - new Date()) / (1000 * 60 * 60 * 24))} days remaining
                         </span>
-                        <button className="text-green-600 hover:text-green-700 font-medium text-sm">
-                          View Details
-                        </button>
                       </div>
                     </div>
                   )}
