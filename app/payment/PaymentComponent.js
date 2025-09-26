@@ -94,7 +94,7 @@ export default function PaymentComponent() {
     return () => unsubscribe();
   }, [searchParams, router]);
 
-  // *** MODIFICATION HERE: Storing the full 'slots' array as 'selectedSlots' ***
+  // Save booking with complete slot information
   const saveBookingToFirebase = async (paymentDetails) => {
     if (!user || !bookingDetails) return;
 
@@ -104,7 +104,9 @@ export default function PaymentComponent() {
         userEmail: user.email,
         activity: bookingDetails.activity,
         date: bookingDetails.date,
-        selectedSlots: bookingDetails.slots, // Store the array of slots for individual display later
+        selectedSlots: bookingDetails.slots, // Store the actual slots array
+        startTime: bookingDetails.slots[0], // First slot as start time
+        endTime: getEndTime(bookingDetails.slots), // Calculate end time
         slotsBooked: bookingDetails.slotsCount,
         amountPaid: bookingDetails.amount,
         paymentId: paymentDetails.razorpay_payment_id,
@@ -118,7 +120,9 @@ export default function PaymentComponent() {
       const collectionName = `${bookingDetails.activity}_Bookings`;
       await addDoc(collection(db, collectionName), bookingData);
 
-      toast.success("Booking confirmed successfully! You can view the full slot list in your bookings.");
+      toast.success(
+        "Booking confirmed successfully! You can view the full slot list in your bookings."
+      );
       router.push("/your-booking");
     } catch (error) {
       console.error("Error saving booking:", error);
@@ -177,12 +181,12 @@ export default function PaymentComponent() {
           color: "#10b981",
         },
 
-         config: {
+        config: {
           display: {
             hide: [
-              { method: 'paylater' },
-              { method: 'wallet' },
-              { method: 'emi' },
+              { method: "paylater" },
+              { method: "wallet" },
+              { method: "emi" },
             ],
           },
         },

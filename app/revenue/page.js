@@ -1,40 +1,51 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getFirestore, collection, getDocs, query, where, orderBy, limit } from "firebase/firestore";
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  limit,
+} from "firebase/firestore";
 import { auth } from "../firebase";
+import { onAuthStateChanged } from "firebase/auth";
+import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
-} from 'recharts';
-import { 
-  DollarSign, 
-  Users, 
-  Calendar, 
-  TrendingUp, 
+} from "recharts";
+import {
+  DollarSign,
+  Users,
+  Calendar,
+  TrendingUp,
   Download,
   RefreshCw,
   Shield,
-  Activity
+  Activity,
 } from "lucide-react";
 
 export default function RevenuePage() {
   const [revenueData, setRevenueData] = useState([]);
   const [recentTransactions, setRecentTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [timeRange, setTimeRange] = useState('month');
+  const [timeRange, setTimeRange] = useState("month");
   const [stats, setStats] = useState({
     totalRevenue: 0,
     totalBookings: 0,
     averageBooking: 0,
-    growth: 0
+    growth: 0,
   });
+  const router = useRouter();
 
   const db = getFirestore();
 
@@ -48,18 +59,25 @@ export default function RevenuePage() {
         return;
       }
 
+      // Check if user is admin
+      if (user.email !== "keluskaratharva999@gmail.com") {
+        toast.error("Access denied. Admin privileges required.");
+        router.push("/login");
+        return;
+      }
+
       // Get current date and calculate range
       const now = new Date();
       let startDate;
-      
+
       switch (timeRange) {
-        case 'week':
+        case "week":
           startDate = new Date(now.setDate(now.getDate() - 7));
           break;
-        case 'month':
+        case "month":
           startDate = new Date(now.setMonth(now.getMonth() - 1));
           break;
-        case 'year':
+        case "year":
           startDate = new Date(now.setFullYear(now.getFullYear() - 1));
           break;
         default:
@@ -69,45 +87,73 @@ export default function RevenuePage() {
       // Fetch bookings for the selected time range
       const footballQuery = query(
         collection(db, "Football_Bookings"),
-        where("timestamp", ">=", startDate)
+        where("bookingTime", ">=", startDate),
+        orderBy("bookingTime", "desc")
       );
       const cricketQuery = query(
         collection(db, "Cricket_Bookings"),
-        where("timestamp", ">=", startDate)
+        where("bookingTime", ">=", startDate),
+        orderBy("bookingTime", "desc")
       );
 
-      // Fetch bookings for recent transactions (last 10)
+      // Fetch bookings for recent transactions (last 20)
       const recentFootballQuery = query(
         collection(db, "Football_Bookings"),
-        orderBy("timestamp", "desc"),
-        limit(5)
+        orderBy("bookingTime", "desc"),
+        limit(10)
       );
       const recentCricketQuery = query(
         collection(db, "Cricket_Bookings"),
-        orderBy("timestamp", "desc"),
-        limit(5)
+        orderBy("bookingTime", "desc"),
+        limit(10)
       );
 
-      const [footballSnapshot, cricketSnapshot, recentFootballSnapshot, recentCricketSnapshot] = await Promise.all([
+      const [
+        footballSnapshot,
+        cricketSnapshot,
+        recentFootballSnapshot,
+        recentCricketSnapshot,
+      ] = await Promise.all([
         getDocs(footballQuery),
         getDocs(cricketQuery),
         getDocs(recentFootballQuery),
-        getDocs(recentCricketQuery)
+        getDocs(recentCricketQuery),
       ]);
 
       const allBookings = [
-        ...footballSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, type: 'football' })),
-        ...cricketSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, type: 'cricket' }))
+        ...footballSnapshot.docs.map((doc) => ({
+          ...doc.data(),
+          id: doc.id,
+          type: "football",
+        })),
+        ...cricketSnapshot.docs.map((doc) => ({
+          ...doc.data(),
+          id: doc.id,
+          type: "cricket",
+        })),
       ];
 
       const allRecentBookings = [
-        ...recentFootballSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, type: 'football' })),
-        ...recentCricketSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, type: 'cricket' }))
+        ...recentFootballSnapshot.docs.map((doc) => ({
+          ...doc.data(),
+          id: doc.id,
+          type: "football",
+        })),
+        ...recentCricketSnapshot.docs.map((doc) => ({
+          ...doc.data(),
+          id: doc.id,
+          type: "cricket",
+        })),
       ];
-      
-      const parsedBookings = allBookings.map(b => ({
+
+      const parsedBookings = allBookings.map((b) => ({
         ...b,
-        timestamp: b.timestamp && b.timestamp.seconds ? new Date(b.timestamp.seconds * 1000) : null
+        timestamp:
+          b.bookingTime && b.bookingTime.seconds
+            ? new Date(b.bookingTime.seconds * 1000)
+            : b.bookingTime instanceof Date
+              ? b.bookingTime
+              : new Date(),
       }));
 
       // Process data for charts
@@ -115,16 +161,22 @@ export default function RevenuePage() {
       setRevenueData(processedData);
 
       // Set recent transactions
-      const parsedRecentBookings = allRecentBookings.map(b => ({
+      const parsedRecentBookings = allRecentBookings.map((b) => ({
         ...b,
-        timestamp: b.timestamp && b.timestamp.seconds ? new Date(b.timestamp.seconds * 1000) : null
+        timestamp:
+          b.bookingTime && b.bookingTime.seconds
+            ? new Date(b.bookingTime.seconds * 1000)
+            : b.bookingTime instanceof Date
+              ? b.bookingTime
+              : new Date(),
       }));
-      const sortedTransactions = parsedRecentBookings.sort((a, b) => (b.timestamp?.getTime() || 0) - (a.timestamp?.getTime() || 0));
+      const sortedTransactions = parsedRecentBookings.sort(
+        (a, b) => (b.timestamp?.getTime() || 0) - (a.timestamp?.getTime() || 0)
+      );
       setRecentTransactions(sortedTransactions);
 
       // Calculate statistics
       calculateStats(parsedBookings);
-
     } catch (error) {
       console.error("Error fetching revenue data:", error);
       toast.error("Failed to load revenue data");
@@ -136,10 +188,12 @@ export default function RevenuePage() {
   const processChartData = (bookings, range) => {
     const groups = {};
 
-    if (range === 'week') {
-      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-      days.forEach(day => groups[day] = { name: day, revenue: 0, bookings: 0 });
-      bookings.forEach(booking => {
+    if (range === "week") {
+      const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      days.forEach(
+        (day) => (groups[day] = { name: day, revenue: 0, bookings: 0 })
+      );
+      bookings.forEach((booking) => {
         if (booking.timestamp) {
           const day = days[booking.timestamp.getDay()];
           if (groups[day]) {
@@ -149,10 +203,12 @@ export default function RevenuePage() {
         }
       });
       return Object.values(groups);
-    } else if (range === 'month') {
+    } else if (range === "month") {
       const weeks = Array.from({ length: 4 }, (_, i) => `Week ${i + 1}`);
-      weeks.forEach(week => groups[week] = { name: week, revenue: 0, bookings: 0 });
-      bookings.forEach(booking => {
+      weeks.forEach(
+        (week) => (groups[week] = { name: week, revenue: 0, bookings: 0 })
+      );
+      bookings.forEach((booking) => {
         if (booking.timestamp) {
           const week = `Week ${Math.ceil(booking.timestamp.getDate() / 7)}`;
           if (groups[week]) {
@@ -162,10 +218,25 @@ export default function RevenuePage() {
         }
       });
       return Object.values(groups);
-    } else if (range === 'year') {
-      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-      months.forEach(month => groups[month] = { name: month, revenue: 0, bookings: 0 });
-      bookings.forEach(booking => {
+    } else if (range === "year") {
+      const months = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+      ];
+      months.forEach(
+        (month) => (groups[month] = { name: month, revenue: 0, bookings: 0 })
+      );
+      bookings.forEach((booking) => {
         if (booking.timestamp) {
           const month = months[booking.timestamp.getMonth()];
           if (groups[month]) {
@@ -180,7 +251,10 @@ export default function RevenuePage() {
   };
 
   const calculateStats = (bookings) => {
-    const totalRevenue = bookings.reduce((sum, booking) => sum + (booking.amountPaid || 0), 0);
+    const totalRevenue = bookings.reduce(
+      (sum, booking) => sum + (booking.amountPaid || 0),
+      0
+    );
     const totalBookings = bookings.length;
     const averageBooking = totalBookings > 0 ? totalRevenue / totalBookings : 0;
 
@@ -188,58 +262,106 @@ export default function RevenuePage() {
       totalRevenue,
       totalBookings,
       averageBooking,
-      growth: 12.5 
+      growth: 12.5,
     });
   };
 
   const exportToCSV = () => {
     // Helper function to format date consistently
     const formatDate = (date) => {
-      if (!date) return 'N/A';
+      if (!date) return "N/A";
       const yyyy = date.getFullYear();
-      const mm = String(date.getMonth() + 1).padStart(2, '0');
-      const dd = String(date.getDate()).padStart(2, '0');
-      const hh = String(date.getHours()).padStart(2, '0');
-      const min = String(date.getMinutes()).padStart(2, '0');
-      const ss = String(date.getSeconds()).padStart(2, '0');
+      const mm = String(date.getMonth() + 1).padStart(2, "0");
+      const dd = String(date.getDate()).padStart(2, "0");
+      const hh = String(date.getHours()).padStart(2, "0");
+      const min = String(date.getMinutes()).padStart(2, "0");
+      const ss = String(date.getSeconds()).padStart(2, "0");
       return `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}`;
     };
 
     // Helper function to properly escape values for CSV
     const escapeCsvValue = (value) => {
-      if (value === null || value === undefined) return '';
+      if (value === null || value === undefined) return "";
       const stringValue = String(value);
-      if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+      if (
+        stringValue.includes(",") ||
+        stringValue.includes('"') ||
+        stringValue.includes("\n")
+      ) {
         return `"${stringValue.replace(/"/g, '""')}"`;
       }
       return stringValue;
     };
 
     const csvContent = [
-      ['Date', 'Activity', 'Amount', 'Slots', 'User'].map(escapeCsvValue).join(','),
-      ...recentTransactions.map(booking => {
+      ["Date", "Activity", "Amount", "Time Slots", "Slots Count", "User"]
+        .map(escapeCsvValue)
+        .join(","),
+      ...recentTransactions.map((booking) => {
         const date = formatDate(booking.timestamp);
+        let timeSlots = "";
+        let slotsCount = booking.slotsBooked || 1;
+
+        if (booking.selectedSlots && booking.selectedSlots.length > 0) {
+          timeSlots = booking.selectedSlots
+            .map((slot) => {
+              const [hour] = slot.split(":");
+              const endHour = parseInt(hour) + 1;
+              const endTime = `${String(endHour).padStart(2, "0")}:00`;
+              return `${slot}-${endTime}`;
+            })
+            .join("; ");
+          slotsCount = booking.selectedSlots.length;
+        } else if (booking.startTime && booking.endTime) {
+          timeSlots = `${booking.startTime}-${booking.endTime}`;
+        }
+
         return [
           escapeCsvValue(date),
           escapeCsvValue(booking.type),
           escapeCsvValue(booking.amountPaid || 0),
-          escapeCsvValue(booking.slotsBooked || 0),
-          escapeCsvValue(booking.userEmail)
-        ].join(',')
-      })
-    ].join('\n');
+          escapeCsvValue(timeSlots),
+          escapeCsvValue(slotsCount),
+          escapeCsvValue(booking.userEmail),
+        ].join(",");
+      }),
+    ].join("\n");
 
-    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const blob = new Blob([csvContent], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = `revenue-${timeRange}-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `revenue-${timeRange}-${new Date().toISOString().split("T")[0]}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
   };
 
   useEffect(() => {
-    fetchRevenueData();
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        router.push("/login");
+        return;
+      }
+
+      if (user.email !== "keluskaratharva999@gmail.com") {
+        toast.error("Access denied. Admin privileges required.");
+        router.push("/login");
+        return;
+      }
+
+      await fetchRevenueData();
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (
+      auth.currentUser &&
+      auth.currentUser.email === "keluskaratharva999@gmail.com"
+    ) {
+      fetchRevenueData();
+    }
   }, [timeRange]);
 
   if (loading) {
@@ -260,8 +382,12 @@ export default function RevenuePage() {
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Revenue Dashboard</h1>
-              <p className="text-gray-600 mt-2">Track your bookings and earnings</p>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Revenue Dashboard
+              </h1>
+              <p className="text-gray-600 mt-2">
+                Track your bookings and earnings
+              </p>
             </div>
             <div className="flex gap-3">
               <select
@@ -296,8 +422,12 @@ export default function RevenuePage() {
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">₹{stats.totalRevenue.toLocaleString()}</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Total Revenue
+                </p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">
+                  ₹{stats.totalRevenue.toLocaleString()}
+                </p>
               </div>
               <div className="p-3 bg-green-100 rounded-full">
                 <DollarSign className="w-6 h-6 text-green-600" />
@@ -305,15 +435,21 @@ export default function RevenuePage() {
             </div>
             <div className="flex items-center mt-2">
               <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-              <span className="text-sm text-green-600">+{stats.growth}% from last period</span>
+              <span className="text-sm text-green-600">
+                +{stats.growth}% from last period
+              </span>
             </div>
           </div>
 
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Bookings</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{stats.totalBookings}</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Total Bookings
+                </p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">
+                  {stats.totalBookings}
+                </p>
               </div>
               <div className="p-3 bg-blue-100 rounded-full">
                 <Users className="w-6 h-6 text-blue-600" />
@@ -325,8 +461,12 @@ export default function RevenuePage() {
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Avg. Booking</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">₹{stats.averageBooking.toFixed(0)}</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Avg. Booking
+                </p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">
+                  ₹{stats.averageBooking.toFixed(0)}
+                </p>
               </div>
               <div className="p-3 bg-orange-100 rounded-full">
                 <Activity className="w-6 h-6 text-orange-600" />
@@ -339,7 +479,9 @@ export default function RevenuePage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Time Period</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1 capitalize">{timeRange}</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1 capitalize">
+                  {timeRange}
+                </p>
               </div>
               <div className="p-3 bg-purple-100 rounded-full">
                 <Calendar className="w-6 h-6 text-purple-600" />
@@ -351,15 +493,17 @@ export default function RevenuePage() {
 
         {/* Revenue Chart */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenue Trend</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Revenue Trend
+          </h3>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={revenueData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
-                <Tooltip 
-                  formatter={(value) => [`₹${value}`, 'Revenue']}
+                <Tooltip
+                  formatter={(value) => [`₹${value}`, "Revenue"]}
                   labelFormatter={(label) => `Period: ${label}`}
                 />
                 <Bar dataKey="revenue" fill="#10b981" radius={[4, 4, 0, 0]} />
@@ -371,7 +515,9 @@ export default function RevenuePage() {
         {/* Recent Transactions */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">Recent Transactions</h3>
+            <h3 className="text-lg font-semibold text-gray-900">
+              Recent Transactions
+            </h3>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -387,7 +533,7 @@ export default function RevenuePage() {
                     User
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Slots
+                    Time Slots
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Amount
@@ -402,7 +548,9 @@ export default function RevenuePage() {
                   recentTransactions.map((item) => (
                     <tr key={item.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {item.timestamp ? item.timestamp.toLocaleString() : 'N/A'}
+                        {item.timestamp
+                          ? item.timestamp.toLocaleString()
+                          : "N/A"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">
                         {item.type}
@@ -410,8 +558,39 @@ export default function RevenuePage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {item.userEmail || "N/A"}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {item.slotsBooked || 1}
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {item.selectedSlots && item.selectedSlots.length > 0 ? (
+                          <div className="space-y-1">
+                            {item.selectedSlots.map((slot, index) => {
+                              const [hour] = slot.split(":");
+                              const endHour = parseInt(hour) + 1;
+                              const endTime = `${String(endHour).padStart(2, "0")}:00`;
+                              return (
+                                <div
+                                  key={index}
+                                  className="text-xs bg-gray-100 px-2 py-1 rounded"
+                                >
+                                  {slot} - {endTime}
+                                </div>
+                              );
+                            })}
+                            <div className="text-xs text-gray-500 font-medium">
+                              {item.selectedSlots.length} slot
+                              {item.selectedSlots.length > 1 ? "s" : ""}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-xs">
+                            <div className="bg-gray-100 px-2 py-1 rounded mb-1">
+                              {item.startTime || "N/A"} -{" "}
+                              {item.endTime || "N/A"}
+                            </div>
+                            <div className="text-gray-500 font-medium">
+                              {item.slotsBooked || 1} slot
+                              {(item.slotsBooked || 1) > 1 ? "s" : ""}
+                            </div>
+                          </div>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
                         ₹{item.amountPaid || 0}
@@ -426,7 +605,10 @@ export default function RevenuePage() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
+                    <td
+                      colSpan="6"
+                      className="px-6 py-4 text-center text-gray-500"
+                    >
                       No transactions found for this time range.
                     </td>
                   </tr>
