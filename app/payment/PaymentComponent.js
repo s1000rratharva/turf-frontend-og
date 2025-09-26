@@ -176,6 +176,17 @@ export default function PaymentComponent() {
         theme: {
           color: "#10b981",
         },
+
+         config: {
+          display: {
+            hide: [
+              { method: 'paylater' },
+              { method: 'wallet' },
+              { method: 'emi' },
+            ],
+          },
+        },
+
         handler: async function (response) {
           setLoading(true);
           // Pass payment details to the save function
